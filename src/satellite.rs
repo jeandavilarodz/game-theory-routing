@@ -6,8 +6,11 @@ use crate::simulation::SIZE;
 use rand::prelude::*;
 use yew::{html, Html};
 
+use gloo::console::log;
+use wasm_bindgen::JsValue;
+
 // Gravitational constant Earth
-const GM: f64 = (3.98601877e11) / 36000.0;
+const GM: f64 = (3.98601877e11) / 36000000.0;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Satellite {
@@ -32,7 +35,8 @@ impl Satellite {
             2 => rng.gen_range(5000..20000),
             3 => 36000,
             _ => panic!("Invalid orbit value"),
-        })/45000.0) * SIZE.y;
+        }) / 45000.0)
+            * SIZE.y;
 
         // Generate random starting angle around the earth
         let angle = rng.gen::<f64>() * math::TAU;
@@ -63,14 +67,12 @@ impl Satellite {
         let color = format!("hsl({:.3}rad, 100%, 50%)", self.hue);
         let x = format!("{:.3}", self.position.x + SIZE.x / 2.0);
         let y = format!("{:.3}", self.position.y + SIZE.y / 2.0);
+        let id = self.id;
 
         html! {
-            <circle
-                cx={x}
-                cy={y}
-                r=4
-                fill={color}
-            />
+            <g>
+                <circle cx={x} cy={y} r="4" fill={color} onclick={move |_|{ log!(JsValue::from(format!("Hello from {}", id)))}}/>
+            </g>
         }
     }
 }
