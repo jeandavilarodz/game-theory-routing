@@ -2,9 +2,9 @@ use gloo::timers::callback::Interval;
 use yew::{html, Component, Context, Html, Properties};
 
 //use crate::boid::Boid;
-use crate::satellite::Satellite;
 use crate::math::Vector2D;
 use crate::quadtree::quadtree::QuadTree;
+use crate::satellite::{Satellite, SatelliteComponent};
 use crate::settings::Settings;
 
 pub const SIZE: Vector2D = Vector2D::new(1600.0, 1200.0);
@@ -97,7 +97,9 @@ impl Component for Simulation {
             self.boids.clear();
 
             let settings = &props.settings;
-            self.boids = (0..settings.boids).map(|id| Satellite::new_random(settings, id)).collect();
+            self.boids = (0..settings.boids)
+                .map(|id| Satellite::new_random(settings, id))
+                .collect();
 
             // as soon as the previous task is dropped it is cancelled.
             // We don't need to worry about manually stopping it.
@@ -116,21 +118,16 @@ impl Component for Simulation {
 
     fn view(&self, _ctx: &Context<Self>) -> Html {
         let view_box = format!("0 0 {} {}", SIZE.x, SIZE.y);
+        let comps = self.boids.iter().cloned().map(|b| html!{<SatelliteComponent info={b} />}).collect::<Html>();
 
-        /*
-        if let Some(qtree) = &self.qtree {
-            log!(JsValue::from("Quadtree present"));
+        html! {
+             <svg class="simulation-window" viewBox={view_box}>
+                {comps}
+
+                 if self.qtree.is_some() && self.show_qtree {
+                     { self.qtree.as_ref().unwrap().render() }
+                 }
+             </svg>
         }
-        */
-
-       html! {
-            <svg class="simulation-window" viewBox={view_box}>
-                { for self.boids.iter().map(Satellite::render) }
-
-                if self.qtree.is_some() && self.show_qtree {
-                    { self.qtree.as_ref().unwrap().render() }
-                }
-            </svg>
-       }
     }
 }

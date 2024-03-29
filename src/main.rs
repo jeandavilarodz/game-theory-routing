@@ -72,14 +72,14 @@ impl Component for App {
             ref settings,
             generation,
             paused,
+            show_qtree,
             
             ..
         } = *self;
 
         html! {
             <>
-                <h1 class="title">{ "Boids" }</h1>
-                <Simulation settings={settings.clone()} {generation} {paused} show_qtree={self.show_qtree}/>
+                <Simulation settings={settings.clone()} {generation} {paused} {show_qtree}/>
                 { self.view_panel(ctx.link()) }
             </>
         }
@@ -129,45 +129,10 @@ impl App {
                     onchange={settings_callback!(link, settings; boids as usize)}
                     value={settings.boids as f64}
                 />
-                <Slider label="View Distance"
-                    max=500.0 step=10.0
-                    onchange={settings_callback!(link, settings; visible_range)}
-                    value={settings.visible_range}
-                />
-                <Slider label="Spacing"
-                    max=100.0
-                    onchange={settings_callback!(link, settings; min_distance)}
-                    value={settings.min_distance}
-                />
                 <Slider label="Max Speed"
                     max=50.0
                     onchange={settings_callback!(link, settings; max_speed)}
                     value={settings.max_speed}
-                />
-                <Slider label="Cohesion"
-                    max=0.5 percentage=true
-                    onchange={settings_callback!(link, settings; cohesion_factor)}
-                    value={settings.cohesion_factor}
-                />
-                <Slider label="Separation"
-                    max=1.0 percentage=true
-                    onchange={settings_callback!(link, settings; separation_factor)}
-                    value={settings.separation_factor}
-                />
-                <Slider label="Alignment"
-                    max=0.5 percentage=true
-                    onchange={settings_callback!(link, settings; alignment_factor)}
-                    value={settings.alignment_factor}
-                />
-                <Slider label="Turn Speed"
-                    max=1.5 percentage=true
-                    onchange={settings_callback!(link, settings; turn_speed_ratio)}
-                    value={settings.turn_speed_ratio}
-                />
-                <Slider label="Color Adaption"
-                    max=1.5 percentage=true
-                    onchange={settings_callback!(link, settings; color_adapt_factor)}
-                    value={settings.color_adapt_factor}
                 />
             </div>
         }
