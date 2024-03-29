@@ -4,7 +4,7 @@ use crate::math::{self, Vector2D};
 use crate::settings::Settings;
 use crate::simulation::SIZE;
 use rand::prelude::*;
-use yew::{html, Callback, Component, Context, Html, Properties};
+use yew::{html, Component, Context, Html, Properties};
 
 // Gravitational constant Earth
 const GM: f64 = (3.98601877e11) / 450000.0;
@@ -58,24 +58,6 @@ impl Satellite {
             self.distance,
         );
     }
-
-    pub fn render(&self, clicked_cb: Callback<usize>, selected: bool) -> Html {
-        // Render satellite as a circle using svg and internal hue
-        let color = format!("hsl({:.3}rad, 100%, 50%)", self.hue);
-        let x = format!("{:.3}", self.position.x + SIZE.x / 2.0);
-        let y = format!("{:.3}", self.position.y + SIZE.y / 2.0);
-        let id = self.id;
-
-        // Create a circle when clicked it will cause a callback to update self.selected
-
-        html! {
-            <circle cx={x} cy={y} r="5" fill={color} onclick={move |_|{clicked_cb.emit(id)}}>
-            if selected {
-                <animate attributeName="r" values="5; 15; 5" dur="1s" repeatCount="indefinite" />
-            }
-            </circle>
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -90,14 +72,15 @@ pub struct SatelliteProps {
 
 pub struct SatelliteComponent {
     selected: bool,
+    sat: Satellite,
 }
 
 impl Component for SatelliteComponent {
     type Message = SatelliteMsg;
     type Properties = SatelliteProps;
 
-    fn create(_ctx: &Context<Self>) -> Self {
-        Self { selected: false }
+    fn create(ctx: &Context<Self>) -> Self {
+        Self { selected: false, sat: ctx.props().info.clone()}
     }
 
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -109,8 +92,25 @@ impl Component for SatelliteComponent {
         }
     }
 
+    fn changed(&mut self, ctx: &Context<Self>, _old_props: &Self::Properties) -> bool {
+        self.sat = ctx.props().info.clone();
+        true
+    }
+
     fn view(&self, ctx: &Context<Self>) -> Html {
         let callback = ctx.link().callback(SatelliteMsg::Clicked);
-        html! { ctx.props().info.render(callback, self.selected) }
+        let color = format!("hsl({:.3}rad, 100%, 50%)", self.sat.hue);
+        let x = format!("{:.3}", self.sat.position.x + SIZE.x / 2.0);
+        let y = format!("{:.3}", self.sat.position.y + SIZE.y / 2.0);
+        let id = self.sat.id;
+
+        html! {
+            // Create a circle when clicked it will cause a callback to update self.selected
+            <circle cx={x} cy={y} r="5" fill={color} onclick={move |_|{callback.emit(id)}}>
+            if self.selected {
+                <animate attributeName="r" values="5; 15; 5" dur="1s" repeatCount="indefinite" />
+            }
+            </circle>
+        }
     }
 }
