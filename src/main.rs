@@ -10,6 +10,8 @@ mod settings;
 mod simulation;
 mod slider;
 mod quadtree;
+mod satellite;
+mod packet;
 
 pub enum Msg {
     ChangeSettings(Settings),
@@ -70,7 +72,7 @@ impl Component for App {
             ref settings,
             generation,
             paused,
-            show_qtree,
+            
             ..
         } = *self;
 

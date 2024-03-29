@@ -1,9 +1,9 @@
-use super::{types::Point, Number};
-use std::fmt::Display;
+use super::{types::Point};
+
 use yew::{html, Html};
 
-use gloo::console::log;
-use wasm_bindgen::JsValue;
+
+
 
 #[derive(Clone, Debug)]
 pub struct Box2d

@@ -1,14 +1,13 @@
 use gloo::timers::callback::Interval;
 use yew::{html, Component, Context, Html, Properties};
 
-use crate::boid::Boid;
+//use crate::boid::Boid;
+use crate::satellite::Satellite;
 use crate::math::Vector2D;
 use crate::quadtree::quadtree::QuadTree;
 use crate::settings::Settings;
-use gloo::console::log;
-use wasm_bindgen::JsValue;
 
-pub const SIZE: Vector2D = Vector2D::new(1600.0, 1000.0);
+pub const SIZE: Vector2D = Vector2D::new(1600.0, 1200.0);
 
 #[derive(Debug)]
 pub enum Msg {
@@ -27,7 +26,7 @@ pub struct Props {
 }
 
 pub struct Simulation {
-    boids: Vec<Boid>,
+    boids: Vec<Satellite>,
     interval: Interval,
     generation: usize,
     qtree: Option<QuadTree<usize>>,
@@ -40,7 +39,7 @@ impl Component for Simulation {
     fn create(ctx: &Context<Self>) -> Self {
         let settings = ctx.props().settings.clone();
         let boids = (0..settings.boids)
-            .map(|_| Boid::new_random(&settings))
+            .map(|id| Satellite::new_random(&settings, id))
             .collect();
 
         let interval = {
@@ -72,9 +71,12 @@ impl Component for Simulation {
                 if paused {
                     false
                 } else {
+                    /*
                     let (new_boids, qtree) = Boid::update_all(settings, &mut self.boids);
                     _ = std::mem::replace(&mut self.boids, new_boids);
                     self.qtree = Some(qtree);
+                    */
+                    self.boids.iter_mut().for_each(|boid| boid.update(settings));
                     true
                 }
             }
@@ -95,8 +97,7 @@ impl Component for Simulation {
             self.boids.clear();
 
             let settings = &props.settings;
-            self.boids
-                .resize_with(settings.boids, || Boid::new_random(settings));
+            self.boids = (0..settings.boids).map(|id| Satellite::new_random(settings, id)).collect();
 
             // as soon as the previous task is dropped it is cancelled.
             // We don't need to worry about manually stopping it.
@@ -124,7 +125,7 @@ impl Component for Simulation {
 
        html! {
             <svg class="simulation-window" viewBox={view_box}>
-                { for self.boids.iter().map(Boid::render) }
+                { for self.boids.iter().map(Satellite::render) }
 
                 if self.qtree.is_some() && self.show_qtree {
                     { self.qtree.as_ref().unwrap().render() }
