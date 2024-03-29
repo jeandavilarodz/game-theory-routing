@@ -58,6 +58,8 @@ impl Satellite {
             self.distance,
         );
     }
+
+    // TODO: Implement game theoretic approach to calculate energy
 }
 
 #[derive(Debug)]
