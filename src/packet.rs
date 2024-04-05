@@ -2,13 +2,15 @@
 use crate::satellite::Satellite;
 use yew::{html, Html};
 
-struct Hop {
+#[derive(Clone, Debug, PartialEq)]
+pub struct Hop {
     from: usize,
     to: usize,
     time: u64,
 }
 
-struct Packet {
+#[derive(Clone, Debug, PartialEq)]
+pub struct Packet {
     id: usize,
     source: usize,
     ttl: usize,
@@ -16,7 +18,7 @@ struct Packet {
 }
 
 impl Packet {
-    fn new(id: usize, source: usize, ttl: usize) -> Self {
+    pub fn new(id: usize, source: usize, ttl: usize) -> Self {
         Self {
             id,
             source,
@@ -25,13 +27,13 @@ impl Packet {
         }
     }
 
-    fn add_hop(&mut self, node: usize, time: u64) {
+    pub fn add_hop(&mut self, node: usize, time: u64) {
         // append a new hop to the path list from previous node to current node
         let last = self.path.last().map_or(self.source, |hop| hop.to);
         self.path.push(Hop { from: last, to: node, time });
     }
 
-    fn render_path(&self, satellites: &Vec<Satellite>) -> Html {
+    pub fn render_path(&self, satellites: &Vec<Satellite>) -> Html {
         // Render current path as lines from source to destination using SVG polyline
         let mut points = String::new();
 

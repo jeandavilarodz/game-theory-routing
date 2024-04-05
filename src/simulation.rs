@@ -1,17 +1,19 @@
 use gloo::timers::callback::Interval;
-use yew::{html, Component, Context, Html, Properties};
+use yew::{html, Component, Context, Html, Properties, Callback};
 
+use crate::components::info_panel::InfoPanel;
 //use crate::boid::Boid;
 use crate::math::Vector2D;
 use crate::quadtree::quadtree::QuadTree;
 use crate::satellite::{Satellite, SatelliteComponent};
 use crate::settings::Settings;
 
-pub const SIZE: Vector2D = Vector2D::new(1600.0, 1200.0);
+pub const SIZE: Vector2D = Vector2D::new(1200.0, 1000.0);
 
 #[derive(Debug)]
 pub enum Msg {
     Tick,
+    ClickedSat(usize),
 }
 
 #[derive(Clone, Debug, PartialEq, Properties)]
@@ -31,6 +33,7 @@ pub struct Simulation {
     generation: usize,
     qtree: Option<QuadTree<usize>>,
     show_qtree: bool,
+    selected_satellite_id: Option<usize>,
 }
 impl Component for Simulation {
     type Message = Msg;
@@ -56,6 +59,7 @@ impl Component for Simulation {
             generation,
             qtree: None,
             show_qtree: false,
+            selected_satellite_id: None,
         }
     }
 
@@ -71,14 +75,17 @@ impl Component for Simulation {
                 if paused {
                     false
                 } else {
-                    /*
-                    let (new_boids, qtree) = Boid::update_all(settings, &mut self.boids);
-                    _ = std::mem::replace(&mut self.boids, new_boids);
-                    self.qtree = Some(qtree);
-                    */
                     self.boids.iter_mut().for_each(|boid| boid.update(settings));
                     true
                 }
+            }
+            Msg::ClickedSat(id) => {
+                if self.selected_satellite_id == Some(id) {
+                    self.selected_satellite_id = None;
+                } else {
+                    self.selected_satellite_id = Some(id);
+                }
+                true
             }
         }
     }
@@ -95,6 +102,8 @@ impl Component for Simulation {
         self.generation = props.generation;
         if should_reset {
             self.boids.clear();
+
+            self.selected_satellite_id = None;
 
             let settings = &props.settings;
             self.boids = (0..settings.boids)
@@ -116,13 +125,22 @@ impl Component for Simulation {
         }
     }
 
-    fn view(&self, _ctx: &Context<Self>) -> Html {
+    fn view(&self, ctx: &Context<Self>) -> Html {
         let view_box = format!("0 0 {} {}", SIZE.x, SIZE.y);
-        let comps = self.boids.iter().cloned().map(|b| html!{<SatelliteComponent info={b} />}).collect::<Html>();
+        let link = ctx.link().clone();
+        let onclick_cb = Callback::from(move |id| link.send_message(Msg::ClickedSat(id)));
 
         html! {
              <svg class="simulation-window" viewBox={view_box}>
-                {comps}
+                {
+                    self.boids.iter().cloned().enumerate().map(|(id, s)| html!{
+                        <SatelliteComponent info={s} on_clicked={onclick_cb.clone()} selected={self.selected_satellite_id.is_some_and(|v| v.eq(&id))} />
+                    }).collect::<Html>()
+                }
+
+                if let Some(selected_satellite_id) = self.selected_satellite_id {
+                    <InfoPanel satellite={self.boids[selected_satellite_id].clone()} />
+                }
 
                  if self.qtree.is_some() && self.show_qtree {
                      { self.qtree.as_ref().unwrap().render() }
@@ -131,3 +149,4 @@ impl Component for Simulation {
         }
     }
 }
+

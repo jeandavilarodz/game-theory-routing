@@ -12,6 +12,7 @@ mod slider;
 mod quadtree;
 mod satellite;
 mod packet;
+mod components;
 
 pub enum Msg {
     ChangeSettings(Settings),
