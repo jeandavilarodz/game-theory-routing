@@ -125,7 +125,7 @@ impl App {
 
         html! {
             <div class="settings">
-                <Slider label="Number of Boids"
+                <Slider label="# of Satellites"
                     min=1.0 max=600.0
                     onchange={settings_callback!(link, settings; boids as usize)}
                     value={settings.boids as f64}
