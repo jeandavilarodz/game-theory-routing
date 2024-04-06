@@ -8,7 +8,7 @@ use crate::quadtree::quadtree::QuadTree;
 use crate::satellite::{Satellite, SatelliteComponent};
 use crate::settings::Settings;
 
-pub const SIZE: Vector2D = Vector2D::new(1000.0, 1000.0);
+pub const SIZE: Vector2D = Vector2D::new(1200.0, 1200.0);
 
 #[derive(Debug)]
 pub enum Msg {
