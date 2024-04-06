@@ -1,14 +1,14 @@
 // This is a module that encapsulates the state and the logic to render a satellite using the yew framework.
 
 use crate::math::{self, Vector2D};
+use crate::packet::Packet;
 use crate::settings::Settings;
 use crate::simulation::SIZE;
-use crate::packet::Packet;
 use rand::prelude::*;
 use yew::{html, Callback, Component, Context, Html, Properties};
 
 // Gravitational constant Earth
-const GM: f64 = (3.98601877e11) / (36000.0 * 36000.0);
+const standard_gravitational_parameter: f64 = 3.98601877e11 / 50000.0;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Satellite {
@@ -22,11 +22,11 @@ pub struct Satellite {
 }
 
 impl Satellite {
-    pub fn new_random(_settings: &Settings, id: usize) -> Self {
+    pub fn new_random(settings: &Settings, id: usize) -> Self {
         let mut rng = rand::thread_rng();
 
         // choose a random number from 1 to 3 to determine orbit
-        let orbit = rng.gen_range(1..4);
+        let orbit = rng.gen_range(2..4);
 
         // use the orbit to generate a random radious following a gaussian distribution
         let distance = (f64::from(match orbit {
@@ -34,14 +34,16 @@ impl Satellite {
             2 => rng.gen_range(5000..20000),
             3 => 36000,
             _ => panic!("Invalid orbit value"),
-        }) / 45000.0)
+        }) / 50000.0)
             * SIZE.y;
 
         // Generate random starting angle around the earth
         let angle = rng.gen::<f64>() * math::TAU;
 
         // calculate angular velocity using radius
-        let angular_velocity = GM / distance.powi(3);
+        let angular_velocity = (standard_gravitational_parameter / distance.powi(3)).sqrt()
+            * (settings.tick_interval_ms as f64)
+            / 1000.0;
 
         Self {
             angular_velocity: angular_velocity,
@@ -56,10 +58,8 @@ impl Satellite {
 
     pub fn update(&mut self, _settings: &Settings) {
         // update position based on angular velocity
-        self.position = Vector2D::from_polar(
-            self.position.angle() + self.angular_velocity,
-            self.distance,
-        );
+        self.position =
+            Vector2D::from_polar(self.position.angle() + self.angular_velocity, self.distance);
     }
 
     // TODO: Implement game theoretic approach to calculate energy
@@ -110,7 +110,7 @@ impl Component for SatelliteComponent {
 
         html! {
             // Create a circle when clicked it will cause a callback to update self.selected
-            <circle cx={x} cy={y} r="5" fill={color} onclick={move |_|{callback.emit(id)}}>
+            <circle cx={format!("{}px", x)} cy={format!("{}px", y)} r="5" fill={color} onclick={move |_|{callback.emit(id)}}>
             if self.selected {
                 <animate attributeName="r" values="5; 15; 5" dur="1s" repeatCount="indefinite" />
             }

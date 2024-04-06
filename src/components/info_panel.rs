@@ -5,8 +5,6 @@
 use yew::prelude::*;
 use crate::satellite::Satellite;
 use crate::simulation::SIZE;
-use gloo::console::log;
-use wasm_bindgen::JsValue;
 
 
 #[derive(Debug, PartialEq, Properties)]
@@ -44,15 +42,9 @@ impl Component for InfoPanel {
         let x = format!("{}", sat_screen_coord_x + if sat_screen_coord_x > (SIZE.x - 180.0) { -200.0 } else { 20.0 });
         let y = format!("{}", sat_screen_coord_y + if sat_screen_coord_y > (SIZE.y - 100.0) { -100.0 } else { 20.0 });
 
-        // log the coordinates for the statellite and the panel to the gloo console
-        let msg = format!("Satellite: ({}, {}), Panel: ({}, {})", self.satellite.position.x, self.satellite.position.y, x, y);
-        log!(&JsValue::from(&msg));
-
-
-
         // Render a table in svg format for the satellite info
         html! {
-            <svg id="info-panel" x={x} y={y}>
+            <svg id="info-panel" x={format!("{}px", x)} y={format!("{}px", y)}>
                 <rect x="0" y="0" width="160px" height="80px" fill="dark-gray" opacity="0.8" rx="15" />
                 <text x="16px" y="26px" font-weight="bold" fill="white">
                     {format!("ID: {}", self.satellite.id)}
