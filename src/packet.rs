@@ -38,8 +38,8 @@ impl Packet {
         let mut points = String::new();
 
         for hop in &self.path {
-            let from = satellites.get(hop.from).unwrap().position;
-            let to = satellites.get(hop.to).unwrap().position;
+            let from = satellites.get(hop.from).unwrap().screen_position;
+            let to = satellites.get(hop.to).unwrap().screen_position;
 
             points.push_str(&format!("{},{} ", from.x, from.y));
             points.push_str(&format!("{},{} ", to.x, to.y));

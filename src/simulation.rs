@@ -131,7 +131,7 @@ impl Component for Simulation {
         let onclick_cb = Callback::from(move |id| link.send_message(Msg::ClickedSat(id)));
 
         html! {
-            <svg class="simulation-window" viewBox={view_box}>
+            <svg class="simulation-window" viewBox={view_box} preserveAspectRatio="xMidYMid">
                 {
                     self.boids.iter().cloned().enumerate().map(|(id, s)| html!{
                         <SatelliteComponent info={s} on_clicked={onclick_cb.clone()} selected={self.selected_satellite_id.is_some_and(|v| v.eq(&id))} />
