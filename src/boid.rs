@@ -9,8 +9,6 @@ use crate::quadtree::{quadtree::QuadTree, types::*};
 use crate::settings::Settings;
 use crate::simulation::SIZE;
 
-use gloo::console::log;
-use wasm_bindgen::JsValue;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Boid {
@@ -116,7 +114,7 @@ impl Boid {
                 Point::new(0.0, SIZE.y),
                 Point::new(SIZE.x, 0.0)
             ),
-            4,
+            16,
         );
 
         // Build quadtree for efficient Boid search

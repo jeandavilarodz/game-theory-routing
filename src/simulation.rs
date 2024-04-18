@@ -1,11 +1,10 @@
 use gloo::timers::callback::Interval;
 use yew::{html, Component, Context, Html, Properties, Callback};
 
-use crate::components::info_panel::InfoPanel;
-//use crate::boid::Boid;
+use crate::components::info_panel;
 use crate::math::Vector2D;
 use crate::quadtree::quadtree::QuadTree;
-use crate::satellite::{Satellite, SatelliteComponent};
+use crate::satellite::{SatelliteProperties, SatellitePosition, SatelliteEnergy, SatelliteComms};
 use crate::settings::Settings;
 
 pub const SIZE: Vector2D = Vector2D::new(1200.0, 1200.0);
@@ -27,8 +26,22 @@ pub struct Props {
     pub show_qtree: bool,
 }
 
+pub struct Entity {
+    pub id: usize,
+    pub position: SatellitePosition,
+    pub properties: SatelliteProperties,
+    pub communication: SatelliteComms,
+    pub game: SatelliteEnergy,
+}
+
+impl Entity {
+    fn render(&self, onclick_cb: Callback<usize>) -> Html {
+        crate::satellite::render(&self.properties, &self.position, onclick_cb)
+    }
+}
+
 pub struct Simulation {
-    boids: Vec<Satellite>,
+    entities: Vec<Entity>,
     interval: Interval,
     generation: usize,
     qtree: Option<QuadTree<usize>>,
@@ -41,10 +54,24 @@ impl Component for Simulation {
 
     fn create(ctx: &Context<Self>) -> Self {
         let settings = ctx.props().settings.clone();
-        let boids = (0..settings.boids)
-            .map(|id| Satellite::new_random(&settings, id))
-            .collect();
 
+        let mut entities = Vec::with_capacity(settings.boids);
+
+        for id in 0..settings.boids {
+            let properties = SatelliteProperties::new_random(id);
+            let position = SatellitePosition::new_random(&properties);
+            let game = SatelliteEnergy::new_random();
+            let communication = SatelliteComms::new(id);
+
+            entities.push(Entity {
+                id,
+                position,
+                properties,
+                game,
+                communication
+            });
+        }
+    
         let interval = {
             let link = ctx.link().clone();
             Interval::new(settings.tick_interval_ms as u32, move || {
@@ -53,8 +80,9 @@ impl Component for Simulation {
         };
 
         let generation = ctx.props().generation;
+
         Self {
-            boids,
+            entities,
             interval,
             generation,
             qtree: None,
@@ -74,16 +102,27 @@ impl Component for Simulation {
 
                 if paused {
                     false
-                } else {
-                    self.boids.iter_mut().for_each(|boid| boid.update(settings));
+                }
+                else {
+                    // update entity position
+                    for entity in self.entities.iter_mut() {
+                        entity.position.update(&entity.properties, settings);
+                    }
+
                     true
                 }
             }
             Msg::ClickedSat(id) => {
                 if self.selected_satellite_id == Some(id) {
                     self.selected_satellite_id = None;
+                    self.entities[id].properties.set_selected(false);
                 } else {
+                    if self.selected_satellite_id.is_some() {
+                        let prev_id = self.selected_satellite_id.unwrap();
+                        self.entities[prev_id].properties.set_selected(false);
+                    }
                     self.selected_satellite_id = Some(id);
+                    self.entities[id].properties.set_selected(true);
                 }
                 true
             }
@@ -99,16 +138,31 @@ impl Component for Simulation {
 
         let should_reset =
             old_props.settings != props.settings || self.generation != props.generation;
+
         self.generation = props.generation;
+
         if should_reset {
-            self.boids.clear();
+            self.entities.clear();
 
             self.selected_satellite_id = None;
 
             let settings = &props.settings;
-            self.boids = (0..settings.boids)
-                .map(|id| Satellite::new_random(settings, id))
-                .collect();
+
+            // Generate new entities
+            for id in 0..settings.boids {
+                let properties = SatelliteProperties::new_random(id);
+                let position = SatellitePosition::new_random(&properties);
+                let game = SatelliteEnergy::new_random();
+                let communication = SatelliteComms::new(id);
+
+                self.entities.push(Entity {
+                    id,
+                    position,
+                    properties,
+                    game,
+                    communication,
+                });
+            }
 
             // as soon as the previous task is dropped it is cancelled.
             // We don't need to worry about manually stopping it.
@@ -132,14 +186,11 @@ impl Component for Simulation {
 
         html! {
             <svg class="simulation-window" viewBox={view_box} preserveAspectRatio="xMidYMid">
-                {
-                    self.boids.iter().cloned().enumerate().map(|(id, s)| html!{
-                        <SatelliteComponent info={s} on_clicked={onclick_cb.clone()} selected={self.selected_satellite_id.is_some_and(|v| v.eq(&id))} />
-                    }).collect::<Html>()
-                }
+
+                { for self.entities.iter().map(|e| e.render(onclick_cb.clone())) }
 
                 if let Some(selected_satellite_id) = self.selected_satellite_id {
-                    <InfoPanel satellite={self.boids[selected_satellite_id].clone()} />
+                    { info_panel::render(&self.entities[selected_satellite_id]) }
                 }
 
                 if self.qtree.is_some() && self.show_qtree {

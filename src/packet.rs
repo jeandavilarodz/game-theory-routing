@@ -1,5 +1,5 @@
 // This will encapsulate data pertaining to a packet traveling though the network
-use crate::satellite::Satellite;
+use crate::satellite::SatellitePosition;
 use yew::{html, Html};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -15,6 +15,12 @@ pub struct Packet {
     source: usize,
     ttl: usize,
     path: Vec<Hop>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct PacketSource {
+    id: usize,
+    sequence_number: usize,
 }
 
 impl Packet {
@@ -33,13 +39,13 @@ impl Packet {
         self.path.push(Hop { from: last, to: node, time });
     }
 
-    pub fn render_path(&self, satellites: &Vec<Satellite>) -> Html {
+    pub fn render_path(&self, satellites: &Vec<SatellitePosition>) -> Html {
         // Render current path as lines from source to destination using SVG polyline
         let mut points = String::new();
 
         for hop in &self.path {
-            let from = satellites.get(hop.from).unwrap().screen_position;
-            let to = satellites.get(hop.to).unwrap().screen_position;
+            let from = satellites.get(hop.from).unwrap().screen_position();
+            let to = satellites.get(hop.to).unwrap().screen_position();
 
             points.push_str(&format!("{},{} ", from.x, from.y));
             points.push_str(&format!("{},{} ", to.x, to.y));
@@ -51,3 +57,20 @@ impl Packet {
     }
 }
 
+impl PacketSource {
+    pub fn new(id: usize) -> Self {
+        Self {
+            id,
+            sequence_number: 0,
+        }
+    }
+
+    pub fn next(&mut self) -> Packet {
+        self.sequence_number += 1;
+        Packet::new(self.sequence_number, self.id, 10)
+    }
+
+    pub fn id(&self) -> usize {
+        self.id
+    }
+}
