@@ -44,7 +44,7 @@ impl Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            boids: 512,
+            boids: 64,
             tick_interval_ms: 50,
             visible_range: 40.0,
             min_distance: 15.0,

@@ -1,7 +1,5 @@
 // This is a module that encapsulates the state and the logic to render a satellite using the yew framework.
 
-use std::time;
-
 use crate::math::{self, Vector2D};
 use crate::packet::{Packet, PacketSource};
 use crate::settings::Settings;
@@ -9,10 +7,14 @@ use crate::simulation::SIZE;
 use rand::prelude::*;
 use yew::{html, Callback, Html};
 
+
+use gloo::console::log;
+use wasm_bindgen::JsValue;
+
 // Gravitational constant Earth
 const STD_GRAV_PARAM: f64 = 3.98601877e11;
 
-const MAX_DISTANCE: f64 = 40000.0;
+pub const MAX_DISTANCE: f64 = 40000.0;
 
 
 pub struct SatelliteProperties {
@@ -29,6 +31,7 @@ pub struct SatellitePosition {
     angle: f64,
 }
 
+#[derive(Clone, Debug)]
 pub struct SatelliteComms {
     packets: Vec<Packet>,
     source: PacketSource,
@@ -71,6 +74,10 @@ impl SatelliteProperties {
         self.id
     }
 
+    pub fn distance(&self) -> f64 {
+        self.distance
+    } 
+
     pub fn set_selected(&mut self, selected: bool) {
         self.selected = selected;
     }
@@ -83,10 +90,13 @@ impl SatellitePosition {
         // Generate starting angle
         let angle = rng.gen::<f64>() * math::TAU;
 
-        let position = Vector2D::from_polar(
+        let mut position = Vector2D::from_polar(
             angle,
             (sat.distance / MAX_DISTANCE) * (SIZE.y / 2.0),
         );
+        
+        position.x += SIZE.x / 2.0;
+        position.y += SIZE.y / 2.0;
 
         Self {
             position,
@@ -127,40 +137,68 @@ impl SatelliteComms {
     }
 
     pub fn add_packet(&mut self, packet: Packet) {
+        if packet.in_path(self.source.id()) {
+            return;
+        }
+
+        if packet.ttl() == 0 {
+            return;
+        }
+
+        let mut packet = packet;
+        packet.decrement_ttl();
+        let timestamp = chrono::Local::now().timestamp() as u64;
+        packet.add_hop(self.source.id(), timestamp);
+
+        let debug = format!("Added on {}: {:?}", self.id(), packet);
+        log!(JsValue::from(&debug));
+
         self.packets.push(packet);
     }
 
-    pub fn send_packet(&mut self,
-                       sat: &SatellitePosition,
-                       neighbors: &mut Vec<(SatelliteComms, SatellitePosition)>,
+    pub fn update(&mut self,
+                       sat: &SatelliteProperties,
+                       pos: &SatellitePosition,
+                       neigh_pos: Vec<&SatellitePosition>,
+                       neigh_comms: Vec<&mut SatelliteComms>,
                        _settings: &Settings)
     {
         let mut rng = rand::thread_rng();
 
         // Create a new packet
-        let mut packet = self.source.next();
+        let mut packet = if rng.gen_bool(0.1) {
+            Some(self.source.next())
+        } else {
+            None
+        };
 
-        // Add the current satellite to the path
-        let timestamp = time::SystemTime::now().elapsed().unwrap().as_millis() as u64;
-        packet.add_hop(self.source.id(), timestamp);
+        // Make the assumption that satellites can communicate with a max distance from Earth to the vehicle
+        let comms_distance = (sat.distance / MAX_DISTANCE) * (SIZE.y / 2.0);
+        let mut neigh_comms = neigh_comms;
 
-        let comms_distance = f64::MAX;
+        // Iterate through all neighbors and send packets if they are within comms distance
+        for (neighbor_comms, neighbor_pos) in neigh_comms.iter_mut().zip(neigh_pos.iter()) {
 
-        for (neighbor_comms, neighbor_pos) in neighbors.iter_mut() {
+            // Do not send packet to ourselves
             if self.source.id() == neighbor_comms.id() {
                 continue;
             }
 
-            let distance = (sat.position - neighbor_pos.position).magnitude();
+            let distance = (pos.position - neighbor_pos.position).magnitude();
 
             if distance < comms_distance {
-                neighbor_comms.add_packet(packet.clone());
+                if let Some(ref mut packet) = packet {
+                    neighbor_comms.add_packet(packet.clone());
+                }
 
                 for packet in self.packets.iter().cloned() {
                     neighbor_comms.add_packet(packet);
                 }
             }
         }
+
+        // Sent all packets to neighbors
+        self.packets.clear();
     }
 }
 

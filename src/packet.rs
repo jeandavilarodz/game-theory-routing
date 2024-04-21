@@ -33,6 +33,18 @@ impl Packet {
         }
     }
 
+    pub fn ttl(&self) -> usize {
+        self.ttl
+    }
+
+    pub fn decrement_ttl(&mut self) {
+        self.ttl -= 1;
+    }
+
+    pub fn in_path(&self, node_id: usize) -> bool {
+        self.path.iter().any(|hop| hop.to == node_id || hop.from == node_id)
+    }
+
     pub fn add_hop(&mut self, node: usize, time: u64) {
         // append a new hop to the path list from previous node to current node
         let last = self.path.last().map_or(self.source, |hop| hop.to);
