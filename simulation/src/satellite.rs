@@ -118,6 +118,13 @@ impl SatellitePosition {
     pub fn screen_position(&self) -> Vector2D {
         self.position
     }
+
+    pub fn distance_from_earth(&self) -> f64 {
+        let x = self.position.x - SIZE.x / 2.0;
+        let y = self.position.y - SIZE.y / 2.0;
+
+        (x * x + y * y).sqrt()
+    }
 }
 
 impl SatelliteComms {

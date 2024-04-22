@@ -60,7 +60,7 @@ impl Default for Settings {
             border_margin: 0.1,
             color_adapt_factor: 0.05,
             energy_threshold: 50,
-            cluster_distance: 200.0,
+            cluster_distance: 100.0,
         }
     }
 }

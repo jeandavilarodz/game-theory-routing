@@ -61,6 +61,7 @@ pub struct Simulation {
     show_qtree: bool,
     selected_satellite_id: Option<usize>,
     network_edges: Option<Vec<(usize, usize)>>,
+    cluster_heads: Option<Vec<usize>>,
 }
 impl Component for Simulation {
     type Message = Msg;
@@ -112,6 +113,7 @@ impl Component for Simulation {
             show_qtree: false,
             selected_satellite_id: None,
             network_edges: None,
+            cluster_heads: None,
         }
     }
 
@@ -220,7 +222,7 @@ impl Component for Simulation {
                     for id in 0..self.entity_props.len() {
                         let position = self.entity_positions[id].screen_position();
                         let mut nearest_head = None;
-                        let mut nearest_distance = position.magnitude();
+                        let mut nearest_distance = self.entity_positions[id].distance_from_earth();
 
                         for head in &cluster_heads {
                             let head_pos = self.entity_positions[*head].screen_position();
@@ -237,6 +239,7 @@ impl Component for Simulation {
                         }
                     }
 
+                    self.cluster_heads = Some(cluster_heads);
                     self.network_edges = Some(cluster_edges);
 
                     /*
@@ -321,6 +324,8 @@ impl Component for Simulation {
             self.entity_energy.clear();
 
             self.selected_satellite_id = None;
+            self.network_edges = None;
+            self.cluster_heads = None;
 
             let settings = &props.settings;
 
@@ -343,6 +348,15 @@ impl Component for Simulation {
                 let link = ctx.link().clone();
                 Interval::new(settings.tick_interval_ms as u32, move || {
                     link.send_message(Msg::Tick)
+                })
+            };
+
+            // as soon as the previous task is dropped it is cancelled.
+            // We don't need to worry about manually stopping it.
+            self.comms_interval = {
+                let link = ctx.link().clone();
+                Interval::new(1000 as u32, move || {
+                    link.send_message(Msg::CommsTick)
                 })
             };
 
@@ -377,6 +391,10 @@ impl Component for Simulation {
                 if let Some(network) = self.network_edges.as_ref() {
                     { for network.iter().map(|e| render_network_edge(e, &self.entity_positions))}
                 }
+
+                if let Some(cluster_heads) = self.cluster_heads.as_ref() {
+                    { for cluster_heads.iter().map(|id| render_ch_link(*id, &self.entity_positions))}
+                }
             </svg>
         }
     }
@@ -393,5 +411,18 @@ fn render_network_edge(edge: &(usize, usize), positions: &Vec<SatellitePosition>
 
     html! {
         <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="gray" stroke-width="1" stroke-linecap="round" opacity="0.5" />
+    }
+}
+
+fn render_ch_link(id: usize, positions: &Vec<SatellitePosition>) -> Html {
+    let position = positions[id].screen_position();
+
+    let x1 = format!("{:.3}", position.x);
+    let y1 = format!("{:.3}", position.y);
+    let x2 = format!("{:.3}", SIZE.x / 2.0);
+    let y2 = format!("{:.3}", SIZE.y / 2.0);
+
+    html! {
+        <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="red" stroke-width="1" stroke-linecap="round" opacity="0.5" />
     }
 }
