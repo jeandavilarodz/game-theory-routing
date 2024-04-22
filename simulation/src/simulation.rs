@@ -6,7 +6,10 @@ use yew::{html, Callback, Component, Context, Html, Properties};
 use crate::components::info_panel;
 use crate::math::Vector2D;
 use crate::quadtree::{box2d::Box2d, quadtree::QuadTree, types::*};
-use crate::satellite::{SatelliteComms, SatelliteEnergy, SatellitePosition, SatelliteProperties, MAX_DISTANCE};
+use crate::satellite::{
+    SatelliteComms, SatelliteEnergy, SatellitePosition, SatelliteProperties, MAX_DISTANCE,
+};
+use crate::satellite;
 use crate::settings::Settings;
 
 use gloo::console::log;
@@ -217,7 +220,7 @@ impl Component for Simulation {
                     for id in 0..self.entity_props.len() {
                         let position = self.entity_positions[id].screen_position();
                         let mut nearest_head = None;
-                        let mut nearest_distance = f64::MAX;
+                        let mut nearest_distance = position.magnitude();
 
                         for head in &cluster_heads {
                             let head_pos = self.entity_positions[*head].screen_position();
@@ -236,7 +239,7 @@ impl Component for Simulation {
 
                     self.network_edges = Some(cluster_edges);
 
-                    /* 
+                    /*
                     let curr_comms_state = self.entity_comms.as_mut_slice();
                     let num_iters = self.entity_props.len();
 
@@ -260,15 +263,15 @@ impl Component for Simulation {
 
 
                         let (first, sec) = curr_comms_state.split_at_mut(id);
-                        
+
                         // let debug = format!("{}:\nfirst: {:?}\nsec: {:?}", id, first, sec);
                         // log!(JsValue::from(&debug));
-                        
+
                         let (current, other) = sec.split_at_mut(1);
-                        
+
                         // let debug = format!("{}:\nother: {:?}\ncurrent:{:?}", id, other, current);
                         // log!(JsValue::from(&debug));
-                        
+
                         let neigh_comms = other
                             .iter_mut()
                             .chain(first)
@@ -280,7 +283,7 @@ impl Component for Simulation {
                                 }
                             })
                             .collect::<Vec<_>>();
-                        
+
 
                         // let debug = format!("{}: {:?}", id, neigh_comms);
                         // log!(JsValue::from(&debug));
@@ -358,15 +361,17 @@ impl Component for Simulation {
             <svg class="simulation-window" viewBox={view_box} preserveAspectRatio="xMidYMid">
 
                 { (0..self.entity_props.len()).map(|id| {
-                    crate::satellite::render(&self.entity_props[id], &self.entity_positions[id], onclick_cb.clone())
+                    satellite::render(&self.entity_props[id], &self.entity_positions[id], onclick_cb.clone())
                 }).collect::<Html>() }
 
                 if let Some(id) = self.selected_satellite_id {
                     { info_panel::render(&self.entity_props[id], &self.entity_positions[id], &self.entity_comms[id], &self.entity_energy[id]) }
                 }
 
-                if self.qtree.is_some() && self.show_qtree {
-                    { self.qtree.as_ref().unwrap().render() }
+                if let Some(qtree) = self.qtree.as_ref() {
+                    if self.show_qtree {
+                        { qtree.render() }
+                    }
                 }
 
                 if let Some(network) = self.network_edges.as_ref() {
@@ -387,6 +392,6 @@ fn render_network_edge(edge: &(usize, usize), positions: &Vec<SatellitePosition>
     let y2 = format!("{:.3}", head_pos.y);
 
     html! {
-        <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="gray" stroke-width="1" />
+        <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="gray" stroke-width="1" stroke-linecap="round" opacity="0.5" />
     }
 }
