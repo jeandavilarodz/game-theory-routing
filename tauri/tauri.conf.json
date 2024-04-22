@@ -6,7 +6,7 @@
     "distDir": "../simulation/dist"
   },
   "package": {
-    "productName": "game-theory-routing",
+    "productName": "Space Routing Sim",
     "version": "0.1.0"
   },
   "tauri": {
@@ -57,7 +57,7 @@
         "fullscreen": false,
         "height": 800,
         "resizable": true,
-        "title": "Game Theory Routing",
+        "title": "Game Theory Space Routing",
         "width": 800
       }
     ]
