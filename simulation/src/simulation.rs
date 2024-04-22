@@ -170,6 +170,7 @@ impl Component for Simulation {
                         qtree.insert(Point::new(position.x, position.y), id);
                     }
 
+                    /* 
                     let curr_comms_state = self.entity_comms.as_mut_slice();
                     let num_iters = self.entity_props.len();
 
@@ -222,6 +223,7 @@ impl Component for Simulation {
                         let ent_pos = &self.entity_positions[id];
                         current[0].update(ent_props, ent_pos, neigh_pos, neigh_comms, settings);
                     }
+                    */
                     self.qtree = Some(qtree);
 
                     true
