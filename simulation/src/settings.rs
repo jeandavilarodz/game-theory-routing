@@ -25,6 +25,10 @@ pub struct Settings {
     pub border_margin: f64,
     /// factor for adapting the average color of the swarm
     pub color_adapt_factor: f64,
+    /// Energy threshold to become a cluster head
+    pub energy_threshold: u32,
+    /// Distance threshold between cluster heads
+    pub cluster_distance: f64,
 }
 impl Settings {
     const KEY: &'static str = "yew.boids.settings";
@@ -55,6 +59,8 @@ impl Default for Settings {
             turn_speed_ratio: 0.33,
             border_margin: 0.1,
             color_adapt_factor: 0.05,
+            energy_threshold: 50,
+            cluster_distance: 200.0,
         }
     }
 }

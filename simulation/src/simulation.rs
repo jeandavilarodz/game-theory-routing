@@ -57,6 +57,7 @@ pub struct Simulation {
     qtree: Option<QuadTree<usize>>,
     show_qtree: bool,
     selected_satellite_id: Option<usize>,
+    network_edges: Option<Vec<(usize, usize)>>,
 }
 impl Component for Simulation {
     type Message = Msg;
@@ -107,6 +108,7 @@ impl Component for Simulation {
             qtree: None,
             show_qtree: false,
             selected_satellite_id: None,
+            network_edges: None,
         }
     }
 
@@ -169,6 +171,70 @@ impl Component for Simulation {
                         let position = entity.screen_position();
                         qtree.insert(Point::new(position.x, position.y), id);
                     }
+
+                    // Iterate through all satellites to create a list of cluster head candidates based on energy if exceeds threshold
+
+                    let cluster_head_candidates = self
+                        .entity_energy
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(id, energy)| {
+                            if energy.energy() > settings.energy_threshold {
+                                Some(id)
+                            } else {
+                                None
+                            }
+                        })
+                        .collect::<Vec<_>>();
+
+                    // Consolidate cluster heads based on distance
+
+                    let mut cluster_heads: Vec<usize> = Vec::new();
+
+                    for id in cluster_head_candidates {
+                        let position = self.entity_positions[id].screen_position();
+                        let mut is_cluster_head = true;
+
+                        for head in &cluster_heads {
+                            let head_pos = self.entity_positions[*head].screen_position();
+                            let distance = (position - head_pos).magnitude();
+
+                            if distance < settings.cluster_distance {
+                                is_cluster_head = false;
+                                break;
+                            }
+                        }
+
+                        if is_cluster_head {
+                            cluster_heads.push(id);
+                        }
+                    }
+
+                    // Create edge list of members to their nearest cluster heads
+
+                    let mut cluster_edges = Vec::new();
+
+                    for id in 0..self.entity_props.len() {
+                        let position = self.entity_positions[id].screen_position();
+                        let mut nearest_head = None;
+                        let mut nearest_distance = f64::MAX;
+
+                        for head in &cluster_heads {
+                            let head_pos = self.entity_positions[*head].screen_position();
+                            let distance = (position - head_pos).magnitude();
+
+                            if distance < nearest_distance {
+                                nearest_distance = distance;
+                                nearest_head = Some(*head);
+                            }
+                        }
+
+                        if let Some(head) = nearest_head {
+                            cluster_edges.push((id, head));
+                        }
+                    }
+
+                    self.network_edges = Some(cluster_edges);
 
                     /* 
                     let curr_comms_state = self.entity_comms.as_mut_slice();
@@ -302,7 +368,25 @@ impl Component for Simulation {
                 if self.qtree.is_some() && self.show_qtree {
                     { self.qtree.as_ref().unwrap().render() }
                 }
+
+                if let Some(network) = self.network_edges.as_ref() {
+                    { for network.iter().map(|e| render_network_edge(e, &self.entity_positions))}
+                }
             </svg>
         }
+    }
+}
+
+fn render_network_edge(edge: &(usize, usize), positions: &Vec<SatellitePosition>) -> Html {
+    let position = positions[edge.0].screen_position();
+    let head_pos = positions[edge.1].screen_position();
+
+    let x1 = format!("{:.3}", position.x);
+    let y1 = format!("{:.3}", position.y);
+    let x2 = format!("{:.3}", head_pos.x);
+    let y2 = format!("{:.3}", head_pos.y);
+
+    html! {
+        <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="gray" stroke-width="1" />
     }
 }
