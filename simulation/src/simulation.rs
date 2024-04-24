@@ -421,16 +421,3 @@ impl Component for Simulation {
         }
     }
 }
-
-fn render_ch_link(id: usize, positions: &Vec<SatellitePosition>) -> Html {
-    let position = positions[id].screen_position();
-
-    let x1 = format!("{:.3}", position.x);
-    let y1 = format!("{:.3}", position.y);
-    let x2 = format!("{:.3}", SIZE.x / 2.0);
-    let y2 = format!("{:.3}", SIZE.y / 2.0);
-
-    html! {
-        <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="red" stroke-width="1" stroke-linecap="round" opacity="0.5" />
-    }
-}
