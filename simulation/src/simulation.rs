@@ -1,9 +1,4 @@
-use std::char::MAX;
-use std::mem;
-use std::ops::RemAssign;
-
 use gloo::timers::callback::Interval;
-use gloo::utils::head;
 use yew::{html, Callback, Component, Context, Html, Properties};
 
 use crate::cluster::{Cluster, ClusterMap};
