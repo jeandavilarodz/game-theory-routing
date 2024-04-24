@@ -81,6 +81,14 @@ impl SatelliteProperties {
     pub fn set_selected(&mut self, selected: bool) {
         self.selected = selected;
     }
+
+    pub fn color(&self) -> f64 {
+        self.hue
+    }
+
+    pub fn set_color(&mut self, hue: f64) {
+        self.hue = hue;
+    }
 }
 
 impl SatellitePosition {
@@ -229,7 +237,7 @@ impl SatelliteEnergy {
 }
 
 pub fn render(sat: &SatelliteProperties, position: &SatellitePosition, onclick_cb: Callback<usize>) -> Html {
-    let color = format!("hsl({:.3}rad, 100%, 50%)", sat.hue);
+    let color = format!("hsl({:.3}, 100%, 50%)", sat.hue);
     let x = format!("{:.3}", position.position.x);
     let y = format!("{:.3}", position.position.y);
     let callback = onclick_cb.clone();

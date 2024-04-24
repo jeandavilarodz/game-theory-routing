@@ -1,8 +1,12 @@
 use std::char::MAX;
+use std::mem;
+use std::ops::RemAssign;
 
 use gloo::timers::callback::Interval;
+use gloo::utils::head;
 use yew::{html, Callback, Component, Context, Html, Properties};
 
+use crate::cluster::{Cluster, ClusterMap};
 use crate::components::info_panel;
 use crate::math::Vector2D;
 use crate::quadtree::{box2d::Box2d, quadtree::QuadTree, types::*};
@@ -35,20 +39,6 @@ pub struct Props {
     pub show_qtree: bool,
 }
 
-pub struct Entity {
-    pub id: usize,
-    pub position: SatellitePosition,
-    pub properties: SatelliteProperties,
-    pub communication: SatelliteComms,
-    pub game: SatelliteEnergy,
-}
-
-impl Entity {
-    fn render(&self, onclick_cb: Callback<usize>) -> Html {
-        crate::satellite::render(&self.properties, &self.position, onclick_cb)
-    }
-}
-
 pub struct Simulation {
     entity_props: Vec<SatelliteProperties>,
     entity_positions: Vec<SatellitePosition>,
@@ -60,8 +50,7 @@ pub struct Simulation {
     qtree: Option<QuadTree<usize>>,
     show_qtree: bool,
     selected_satellite_id: Option<usize>,
-    network_edges: Option<Vec<(usize, usize)>>,
-    cluster_heads: Option<Vec<usize>>,
+    cluster_map: ClusterMap,
 }
 impl Component for Simulation {
     type Message = Msg;
@@ -112,8 +101,7 @@ impl Component for Simulation {
             qtree: None,
             show_qtree: false,
             selected_satellite_id: None,
-            network_edges: None,
-            cluster_heads: None,
+            cluster_map: ClusterMap::new(),
         }
     }
 
@@ -216,13 +204,31 @@ impl Component for Simulation {
                     }
 
                     // Create edge list of members to their nearest cluster heads
+                    let mut clusters = ClusterMap::new();
 
-                    let mut cluster_edges = Vec::new();
+                    // Create clusters using cluster heads
+                    for ch_id in cluster_heads.iter() {
+                        let mut cluster = Cluster::new(*ch_id);
+                        if let Some(prev_cluster) = self.cluster_map.get(cluster.head()) {
+                            cluster.set_color(prev_cluster.color());
+                            self.entity_props[cluster.head()].set_color(prev_cluster.color());
+                        } else {
+                            cluster.set_color(self.entity_props[cluster.head()].color());
+                        }
+                        clusters.insert(cluster);
+                    }
 
-                    for id in 0..self.entity_props.len() {
-                        let position = self.entity_positions[id].screen_position();
+                    for prop in self.entity_props.iter_mut() {
+                        if cluster_heads.contains(&prop.id()) {
+                            // skip assignment for cluster heads
+                            continue;
+                        }
+
+                        let id = prop.id(); 
+                        let pos = self.entity_positions.get(id).unwrap();
+                        let position = pos.screen_position();
+                        let mut nearest_distance = pos.distance_from_earth();
                         let mut nearest_head = None;
-                        let mut nearest_distance = self.entity_positions[id].distance_from_earth();
 
                         for head in &cluster_heads {
                             let head_pos = self.entity_positions[*head].screen_position();
@@ -235,12 +241,33 @@ impl Component for Simulation {
                         }
 
                         if let Some(head) = nearest_head {
-                            cluster_edges.push((id, head));
+                            let cluster = clusters.get_mut(head).unwrap();
+                            cluster.add_member(id);
                         }
                     }
 
-                    self.cluster_heads = Some(cluster_heads);
-                    self.network_edges = Some(cluster_edges);
+                    // Set cluster colors to the average color of all members
+                    for cluster in clusters.clusters_mut() {
+                        if cluster.size() < 2 {
+                            continue;
+                        }
+
+                        // Mix member colors
+                        let mut member_color = cluster.members().iter().map(|id| self.entity_props[*id].color()).sum::<f64>();
+                        member_color /= cluster.members().len() as f64;
+                        let head_color = cluster.color();
+                        let mut color = (head_color + member_color) / 2.0;
+                        color %= 360.0;
+
+                        // Set color
+                        cluster.set_color(color);
+                        self.entity_props[cluster.head()].set_color(color);
+                        for member in cluster.members() {
+                            self.entity_props[*member].set_color(color);
+                        }
+                    }
+
+                    self.cluster_map = clusters;
 
                     /*
                     let curr_comms_state = self.entity_comms.as_mut_slice();
@@ -324,8 +351,7 @@ impl Component for Simulation {
             self.entity_energy.clear();
 
             self.selected_satellite_id = None;
-            self.network_edges = None;
-            self.cluster_heads = None;
+            self.cluster_map = ClusterMap::new();
 
             let settings = &props.settings;
 
@@ -370,11 +396,12 @@ impl Component for Simulation {
         let view_box = format!("0 0 {} {}", SIZE.x, SIZE.y);
         let link = ctx.link().clone();
         let onclick_cb = Callback::from(move |id| link.send_message(Msg::ClickedSat(id)));
+        let num_sats = self.entity_props.len();
 
         html! {
             <svg class="simulation-window" viewBox={view_box} preserveAspectRatio="xMidYMid">
 
-                { (0..self.entity_props.len()).map(|id| {
+                { (0..num_sats).map(|id| {
                     satellite::render(&self.entity_props[id], &self.entity_positions[id], onclick_cb.clone())
                 }).collect::<Html>() }
 
@@ -388,29 +415,10 @@ impl Component for Simulation {
                     }
                 }
 
-                if let Some(network) = self.network_edges.as_ref() {
-                    { for network.iter().map(|e| render_network_edge(e, &self.entity_positions))}
-                }
+                { self.cluster_map.clusters().iter().map(|e| crate::cluster::render(e, &self.entity_positions)).collect::<Vec<_>>() }
 
-                if let Some(cluster_heads) = self.cluster_heads.as_ref() {
-                    { for cluster_heads.iter().map(|id| render_ch_link(*id, &self.entity_positions))}
-                }
             </svg>
         }
-    }
-}
-
-fn render_network_edge(edge: &(usize, usize), positions: &Vec<SatellitePosition>) -> Html {
-    let position = positions[edge.0].screen_position();
-    let head_pos = positions[edge.1].screen_position();
-
-    let x1 = format!("{:.3}", position.x);
-    let y1 = format!("{:.3}", position.y);
-    let x2 = format!("{:.3}", head_pos.x);
-    let y2 = format!("{:.3}", head_pos.y);
-
-    html! {
-        <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="gray" stroke-width="1" stroke-linecap="round" opacity="0.5" />
     }
 }
 

@@ -13,6 +13,7 @@ mod quadtree;
 mod satellite;
 mod packet;
 mod components;
+mod cluster;
 
 pub enum Msg {
     ChangeSettings(Settings),
