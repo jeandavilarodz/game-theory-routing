@@ -12,7 +12,6 @@ use crate::satellite::SatellitePosition;
 ///
 
 use crate::simulation::SIZE;
-use crate::math;
 
 use std::collections::HashMap;
 use yew::{html, Html};
@@ -34,7 +33,7 @@ impl Cluster {
             head,
             members: Vec::new(),
             size: 1,
-            color: rng.gen::<f32>() * math::TAU,
+            color: rng.gen::<f32>() * 360.0,
         }
     }
 
