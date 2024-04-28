@@ -120,7 +120,7 @@ impl App {
                 })
             }};
             ($link:expr, $settings:ident; $key:ident) => {
-                settings_callback!($link, $settings; $key as f64)
+                settings_callback!($link, $settings; $key as f32)
             }
         }
 
@@ -129,7 +129,7 @@ impl App {
                 <Slider label="# of Satellites"
                     min=1.0 max=600.0
                     onchange={settings_callback!(link, settings; boids as usize)}
-                    value={settings.boids as f64}
+                    value={settings.boids as f32}
                 />
                 <Slider label="Max Speed"
                     max=50.0

@@ -8,20 +8,20 @@ use yew::{html, Html};
 #[derive(Clone, Debug)]
 pub struct Box2d
 {
-    pub(crate) top_left: Point<f64>,
-    pub(crate) btm_right: Point<f64>,
+    pub(crate) top_left: Point<f32>,
+    pub(crate) btm_right: Point<f32>,
 }
 
 impl Box2d
 {
-    pub fn new(top_left: Point<f64>, btm_right: Point<f64>) -> Self {
+    pub fn new(top_left: Point<f32>, btm_right: Point<f32>) -> Self {
         Box2d {
             top_left,
             btm_right,
         }
     }
 
-    pub fn contains(&self, point: &Point<f64>) -> bool {
+    pub fn contains(&self, point: &Point<f32>) -> bool {
         let top_left = &self.top_left;
         let btm_right = &self.btm_right;
 

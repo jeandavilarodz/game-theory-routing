@@ -23,7 +23,7 @@ pub struct Cluster {
     head: usize,
     members: Vec<usize>,
     size: usize,
-    color: f64,
+    color: f32,
 }
 
 impl Cluster {
@@ -34,7 +34,7 @@ impl Cluster {
             head,
             members: Vec::new(),
             size: 1,
-            color: rng.gen::<f64>() * math::TAU,
+            color: rng.gen::<f32>() * math::TAU,
         }
     }
 
@@ -50,7 +50,7 @@ impl Cluster {
         self.size
     }
 
-    pub fn color(&self) -> f64 {
+    pub fn color(&self) -> f32 {
         self.color
     }
 
@@ -59,7 +59,7 @@ impl Cluster {
         self.size += 1;
     }
 
-    pub fn set_color(&mut self, color: f64) {
+    pub fn set_color(&mut self, color: f32) {
         self.color = color;
     }
 }

@@ -248,8 +248,8 @@ impl Component for Simulation {
                         }
 
                         // Mix member colors
-                        let mut member_color = cluster.members().iter().map(|id| self.entity_props[*id].color()).sum::<f64>();
-                        member_color /= cluster.members().len() as f64;
+                        let mut member_color = cluster.members().iter().map(|id| self.entity_props[*id].color()).sum::<f32>();
+                        member_color /= cluster.members().len() as f32;
                         let head_color = cluster.color();
                         let mut color = (head_color + member_color) / 2.0;
                         color %= 360.0;

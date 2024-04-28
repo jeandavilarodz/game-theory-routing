@@ -14,17 +14,17 @@ fn next_slider_id() -> usize {
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct Props {
     pub label: &'static str,
-    pub value: f64,
-    pub onchange: Callback<f64>,
+    pub value: f32,
+    pub onchange: Callback<f32>,
     #[prop_or_default]
     pub precision: Option<usize>,
     #[prop_or_default]
     pub percentage: bool,
     #[prop_or_default]
-    pub min: f64,
-    pub max: f64,
+    pub min: f32,
+    pub max: f32,
     #[prop_or_default]
-    pub step: Option<f64>,
+    pub step: Option<f32>,
 }
 
 pub struct Slider {
@@ -67,12 +67,12 @@ impl Component for Slider {
         let id = format!("slider-{}", self.id);
         let step = step.unwrap_or_else(|| {
             let p = if percentage { precision + 2 } else { precision };
-            10f64.powi(-(p as i32))
+            10f32.powi(-(p as i32))
         });
 
         let oninput = onchange.reform(|e: InputEvent| {
             let input: HtmlInputElement = e.target_unchecked_into();
-            input.value_as_number()
+            input.value_as_number() as f32
         });
 
         html! {

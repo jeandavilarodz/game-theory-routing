@@ -14,8 +14,8 @@ use crate::simulation::SIZE;
 pub struct Boid {
     position: Vector2D,
     velocity: Vector2D,
-    radius: f64,
-    hue: f64,
+    radius: f32,
+    hue: f32,
 }
 
 impl Boid {
@@ -25,17 +25,17 @@ impl Boid {
         let max_radius = settings.min_distance / 2.0;
         let min_radius = max_radius / 6.0;
         // by using the third power large boids become rarer
-        let radius = min_radius + rng.gen::<f64>().powi(3) * (max_radius - min_radius);
+        let radius = min_radius + rng.gen::<f32>().powi(3) * (max_radius - min_radius);
 
         Self {
-            position: Vector2D::new(rng.gen::<f64>() * SIZE.x, rng.gen::<f64>() * SIZE.y),
-            velocity: Vector2D::from_polar(rng.gen::<f64>() * math::TAU, settings.max_speed),
+            position: Vector2D::new(rng.gen::<f32>() * SIZE.x, rng.gen::<f32>() * SIZE.y),
+            velocity: Vector2D::from_polar(rng.gen::<f32>() * math::TAU, settings.max_speed),
             radius,
-            hue: rng.gen::<f64>() * math::TAU,
+            hue: rng.gen::<f32>() * math::TAU,
         }
     }
 
-    fn coherence(&self, boids: &Vec<&Boid>, factor: f64) -> Vector2D {
+    fn coherence(&self, boids: &Vec<&Boid>, factor: f32) -> Vector2D {
         Vector2D::weighted_mean(
             boids
                 .iter()
@@ -60,14 +60,14 @@ impl Boid {
         accel * settings.separation_factor
     }
 
-    fn alignment(&self, boids: &Vec<&Boid>, factor: f64) -> Vector2D {
+    fn alignment(&self, boids: &Vec<&Boid>, factor: f32) -> Vector2D {
         Vector2D::mean(boids.iter().map(|other| other.velocity))
             .map(|mean| (mean - self.velocity) * factor)
             .unwrap_or_default()
     }
 
-    fn adapt_color(&self, boids: &Vec<&Boid>, factor: f64) -> f64 {
-        let mean = f64::mean(boids.iter().filter_map(|other| {
+    fn adapt_color(&self, boids: &Vec<&Boid>, factor: f32) -> f32 {
+        let mean = f32::mean(boids.iter().filter_map(|other| {
             if other.radius > self.radius {
                 Some(math::smallest_angle_between(self.hue, other.hue))
             } else {
@@ -165,10 +165,10 @@ impl Boid {
     }
 }
 
-fn iter_shape_points(radius: f64, rotation: f64) -> impl Iterator<Item = Vector2D> {
+fn iter_shape_points(radius: f32, rotation: f32) -> impl Iterator<Item = Vector2D> {
     // This is angle and radius pairs, points are:
     //  (2,0), (-sqrt(2)/2, sqrt(2)/2), (-sqrt(2)/2, -sqrt(2)/2)
-    const SHAPE: [(f64, f64); 3] = [
+    const SHAPE: [(f32, f32); 3] = [
         (0. * math::FRAC_TAU_3, 2.0),
         (1. * math::FRAC_TAU_3, 1.0),
         (2. * math::FRAC_TAU_3, 1.0),

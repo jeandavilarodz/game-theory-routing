@@ -12,23 +12,23 @@ use gloo::console::log;
 use wasm_bindgen::JsValue;
 
 // Gravitational constant Earth
-const STD_GRAV_PARAM: f64 = 3.98601877e11;
+const STD_GRAV_PARAM: f32 = 3.98601877e11;
 
-pub const MAX_DISTANCE: f64 = 40000.0;
+pub const MAX_DISTANCE: f32 = 40000.0;
 
 
 pub struct SatelliteProperties {
     id: usize,
-    angular_velocity: f64,
-    distance: f64,
+    angular_velocity: f32,
+    distance: f32,
     selected:bool,
-    hue: f64,
+    hue: f32,
 }
 
 #[derive(Clone, PartialEq)]
 pub struct SatellitePosition {
     position: Vector2D,
-    angle: f64,
+    angle: f32,
 }
 
 #[derive(Clone, Debug)]
@@ -49,17 +49,17 @@ impl SatelliteProperties {
         let orbit = rng.gen_range(2..4);
 
         // use the orbit to generate a random radious following a gaussian distribution
-        let distance = f64::from(match orbit {
-            1 => rng.gen_range(500..1200),
-            2 => rng.gen_range(5000..20000),
-            3 => 36000,
+        let distance = match orbit {
+            1 => rng.gen_range(500..1200) as f32,
+            2 => rng.gen_range(5000..20000) as f32,
+            3 => 36000.0f32,
             _ => panic!("Invalid orbit value"),
-        });
+        };
 
         // calculate angular velocity using radius
         let angular_velocity = (STD_GRAV_PARAM / distance.powi(3)).sqrt();
 
-        let hue = rng.gen::<f64>() * 360.0;
+        let hue = rng.gen::<f32>() * 360.0;
 
         Self {
             id,
@@ -74,7 +74,7 @@ impl SatelliteProperties {
         self.id
     }
 
-    pub fn distance(&self) -> f64 {
+    pub fn distance(&self) -> f32 {
         self.distance
     } 
 
@@ -82,11 +82,11 @@ impl SatelliteProperties {
         self.selected = selected;
     }
 
-    pub fn color(&self) -> f64 {
+    pub fn color(&self) -> f32 {
         self.hue
     }
 
-    pub fn set_color(&mut self, hue: f64) {
+    pub fn set_color(&mut self, hue: f32) {
         self.hue = hue;
     }
 }
@@ -96,7 +96,7 @@ impl SatellitePosition {
         let mut rng = rand::thread_rng();
 
         // Generate starting angle
-        let angle = rng.gen::<f64>() * math::TAU;
+        let angle = rng.gen::<f32>() * math::TAU;
 
         let mut position = Vector2D::from_polar(
             angle,
@@ -114,7 +114,7 @@ impl SatellitePosition {
 
     pub fn update(&mut self, sat: &SatelliteProperties, settings: &Settings) {
         // Calculate new position based on angular velocity
-        self.angle += sat.angular_velocity * (settings.tick_interval_ms as f64 / 1000.0);
+        self.angle += sat.angular_velocity * (settings.tick_interval_ms as f32 / 1000.0);
         let radius = (sat.distance / MAX_DISTANCE) * (SIZE.y / 2.0);
         self.position = Vector2D::from_polar(self.angle, radius);
 
@@ -127,7 +127,7 @@ impl SatellitePosition {
         self.position
     }
 
-    pub fn distance_from_earth(&self) -> f64 {
+    pub fn distance_from_earth(&self) -> f32 {
         let x = self.position.x - SIZE.x / 2.0;
         let y = self.position.y - SIZE.y / 2.0;
 
@@ -220,7 +220,7 @@ impl SatelliteComms {
 impl SatelliteEnergy {
     pub fn new_random() -> Self {
         let mut rng = rand::thread_rng();
-        let energy = (rng.gen::<f64>() * 100.0) as u32;
+        let energy = (rng.gen::<f32>() * 100.0) as u32;
 
         Self {
             energy,
