@@ -73,12 +73,12 @@ impl Component for Simulation {
 
         let comms_interval = {
             let link = ctx.link().clone();
-            Interval::new(1000 as u32, move || link.send_message(Msg::CommsTick))
+            Interval::new(1000_u32, move || link.send_message(Msg::CommsTick))
         };
 
         let game_interval = {
             let link = ctx.link().clone();
-            Interval::new(333 as u32, move || link.send_message(Msg::GameTick))
+            Interval::new(333_u32, move || link.send_message(Msg::GameTick))
         };
 
         let generation = ctx.props().generation;
@@ -331,7 +331,7 @@ impl Component for Simulation {
             for id in 0..settings.boids {
                 let properties = SatelliteProperties::new_random(id);
                 let position = SatellitePosition::new_random(&properties);
-                let game = SatelliteEnergy::new_random(id, &settings);
+                let game = SatelliteEnergy::new_random(id, settings);
 
                 self.entity_props.push(properties);
                 self.entity_positions.push(position);
@@ -351,14 +351,14 @@ impl Component for Simulation {
             // We don't need to worry about manually stopping it.
             self.comms_interval = {
                 let link = ctx.link().clone();
-                Interval::new(1000 as u32, move || {
+                Interval::new(1000_u32, move || {
                     link.send_message(Msg::CommsTick)
                 })
             };
 
             self.game_interval = {
                 let link = ctx.link().clone();
-                Interval::new(333 as u32, move || link.send_message(Msg::GameTick))
+                Interval::new(333_u32, move || link.send_message(Msg::GameTick))
             };
 
             true

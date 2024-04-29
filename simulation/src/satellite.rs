@@ -12,7 +12,7 @@ use gloo::console::log;
 use wasm_bindgen::JsValue;
 
 // Gravitational constant Earth
-const STD_GRAV_PARAM: f32 = 3.98601877e11;
+const STD_GRAV_PARAM: f32 = 3.986_018_8e11;
 
 pub const MAX_DISTANCE: f32 = 40000.0;
 
@@ -162,11 +162,7 @@ impl SatelliteEnergy {
         }
 
         if cluster.size() < 2 {
-            if self.energy > self.cost {
-                self.in_game = true;
-            } else {
-                self.in_game = false;
-            }
+            self.in_game = self.energy > self.cost;
             return;
         }
 
@@ -175,7 +171,7 @@ impl SatelliteEnergy {
         let num_neighbors = (cluster.size() - 1) as f32;
         let prob_entering = 1.0 - (1.0 - ((self.energy - self.cost) / (self.energy + self.gain))).powf(1.0/num_neighbors);
 
-        if prob_entering < 0.0 || prob_entering > 1.0 || prob_entering.is_nan() {
+        if !(0.0..=1.0).contains(&prob_entering) || prob_entering.is_nan() {
             self.in_game = false;
             return;
         }
@@ -214,7 +210,6 @@ impl SatelliteEnergy {
 
         // If no neighbors are in the game, get no payoff
         if neighbors_in_game == 0 {
-            return;
         }
         else {
             // Recharge energy

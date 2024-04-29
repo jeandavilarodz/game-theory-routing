@@ -67,6 +67,12 @@ pub struct ClusterMap {
     map: HashMap<usize, Cluster>,
 }
 
+impl Default for ClusterMap {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ClusterMap {
     pub fn new() -> Self {
         Self {
@@ -99,7 +105,7 @@ impl ClusterMap {
     }
 }
 
-pub fn render(cluster: &Cluster, satellites: &Vec<SatellitePosition>) -> Html {
+pub fn render(cluster: &Cluster, satellites: &[SatellitePosition]) -> Html {
     let head = satellites.get(cluster.head()).unwrap();
 
     let x1 = format!("{:.3}", head.screen_position().x);
