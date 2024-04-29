@@ -1,5 +1,6 @@
 // This is a module that encapsulates the state and the logic to render a satellite using the yew framework.
 
+use crate::cluster::Cluster;
 use crate::math::{self, Vector2D};
 use crate::packet::{Packet, PacketSource};
 use crate::settings::Settings;
@@ -38,7 +39,10 @@ pub struct SatelliteComms {
 }
 
 pub struct SatelliteEnergy {
-    energy: u32,
+    in_game: bool,
+    cost: f32,
+    gain: f32,
+    energy: f32,
 }
 
 impl SatelliteProperties {
@@ -218,34 +222,56 @@ impl SatelliteComms {
 }
 
 impl SatelliteEnergy {
-    pub fn new_random() -> Self {
+    pub fn new_random(settings: &Settings) -> Self {
         let mut rng = rand::thread_rng();
-        let energy = (rng.gen::<f32>() * 100.0) as u32;
+        let energy = rng.gen::<f32>() * 100.0;
 
         Self {
+            in_game: true,
+            cost: settings.comms_cost,
+            gain: settings.energy_gain,
             energy,
         }
     }
 
-    pub fn update(&mut self, _settings: &Settings) {
-        todo!()
+    pub fn update(&mut self, cluster: &Cluster) {
+        if cluster.size() < 2 {
+            self.in_game = true;
+            return;
+        }
+
+        // Calculate Nash equilibrium probability
+        let mut rng = rand::thread_rng();
+        let num_neighbors = (cluster.size() - 1) as f32;
+        let prob_entering = 1.0 - (1.0 - ((self.energy - self.cost) / (self.energy + self.gain))).powf(1.0/num_neighbors);
+
+        if prob_entering < 0.0 {
+            self.in_game = false;
+            return;
+        }
+        
+        let debug = format!("Prob entering {}:", prob_entering);
+        log!(JsValue::from(&debug));
+        
+        self.in_game = rng.gen_bool(prob_entering.into());
     }
 
-    pub fn energy(&self) -> u32 {
+    pub fn energy(&self) -> f32 {
         self.energy
     }
 }
 
-pub fn render(sat: &SatelliteProperties, position: &SatellitePosition, onclick_cb: Callback<usize>) -> Html {
+pub fn render(sat: &SatelliteProperties, position: &SatellitePosition, game: &SatelliteEnergy, onclick_cb: Callback<usize>) -> Html {
     let color = format!("hsl({:.3}, 100%, 50%)", sat.hue);
     let x = format!("{:.3}", position.position.x);
     let y = format!("{:.3}", position.position.y);
     let callback = onclick_cb.clone();
     let id = sat.id;
+    let opacity = if game.in_game { "1.0" } else { "0.5" };
 
     html! {
         // Create a circle when clicked it will cause a callback to update self.selected
-        <circle cx={x} cy={y} r="5" fill={color} onclick={move |_|{callback.emit(id)}}>
+        <circle cx={x} cy={y} r="5" fill={color} opacity={opacity} onclick={move |_|{callback.emit(id)}}>
         if sat.selected {
             <animate attributeName="r" values="5; 15; 5" dur="1s" repeatCount="indefinite" />
         }

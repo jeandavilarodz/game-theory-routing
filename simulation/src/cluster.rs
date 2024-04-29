@@ -31,7 +31,7 @@ impl Cluster {
 
         Self {
             head,
-            members: Vec::new(),
+            members: vec![head],
             size: 1,
             color: rng.gen::<f32>() * 360.0,
         }

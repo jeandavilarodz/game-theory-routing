@@ -20,6 +20,7 @@ pub const SIZE: Vector2D = Vector2D::new(1200.0, 1200.0);
 pub enum Msg {
     Tick,
     CommsTick,
+    GameTick,
     ClickedSat(usize),
 }
 
@@ -41,6 +42,7 @@ pub struct Simulation {
     entity_energy: Vec<SatelliteEnergy>,
     interval: Interval,
     comms_interval: Interval,
+    game_interval: Interval,
     generation: usize,
     qtree: Option<QuadTree<usize>>,
     show_qtree: bool,
@@ -62,7 +64,7 @@ impl Component for Simulation {
         for id in 0..settings.boids {
             let properties = SatelliteProperties::new_random(id);
             let position = SatellitePosition::new_random(&properties);
-            let game = SatelliteEnergy::new_random();
+            let game = SatelliteEnergy::new_random(&settings);
             let communication = SatelliteComms::new(id);
 
             entity_props.push(properties);
@@ -83,6 +85,11 @@ impl Component for Simulation {
             Interval::new(1000 as u32, move || link.send_message(Msg::CommsTick))
         };
 
+        let game_interval = {
+            let link = ctx.link().clone();
+            Interval::new(500 as u32, move || link.send_message(Msg::GameTick))
+        };
+
         let generation = ctx.props().generation;
 
         Self {
@@ -92,6 +99,7 @@ impl Component for Simulation {
             entity_energy,
             interval,
             comms_interval,
+            game_interval,
             generation,
             qtree: None,
             show_qtree: false,
@@ -121,6 +129,25 @@ impl Component for Simulation {
                         pos.update(props, settings);
                     }
 
+                    true
+                }
+            }
+            Msg::GameTick => {
+                let Props {
+                    paused,
+                    ..
+                } = *ctx.props();
+
+                if paused {
+                    false
+                } else {
+                    for cluster in self.cluster_map.clusters() {
+                        for member in cluster.members() {
+                            let energy = &mut self.entity_energy[*member];
+                            energy.update(cluster);
+                        }
+                    }
+                
                     true
                 }
             }
@@ -354,7 +381,7 @@ impl Component for Simulation {
             for id in 0..settings.boids {
                 let properties = SatelliteProperties::new_random(id);
                 let position = SatellitePosition::new_random(&properties);
-                let game = SatelliteEnergy::new_random();
+                let game = SatelliteEnergy::new_random(&settings);
                 let communication = SatelliteComms::new(id);
 
                 self.entity_props.push(properties);
@@ -381,6 +408,11 @@ impl Component for Simulation {
                 })
             };
 
+            self.game_interval = {
+                let link = ctx.link().clone();
+                Interval::new(500 as u32, move || link.send_message(Msg::GameTick))
+            };
+
             true
         } else {
             false
@@ -397,7 +429,7 @@ impl Component for Simulation {
             <svg class="simulation-window" viewBox={view_box} preserveAspectRatio="xMidYMid">
 
                 { (0..num_sats).map(|id| {
-                    satellite::render(&self.entity_props[id], &self.entity_positions[id], onclick_cb.clone())
+                    satellite::render(&self.entity_props[id], &self.entity_positions[id], &self.entity_energy[id], onclick_cb.clone())
                 }).collect::<Html>() }
 
                 if let Some(id) = self.selected_satellite_id {
