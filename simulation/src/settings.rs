@@ -65,7 +65,7 @@ impl Default for Settings {
             turn_speed_ratio: 0.33,
             border_margin: 0.1,
             color_adapt_factor: 0.05,
-            energy_threshold: 25.0,
+            energy_threshold: 33.0,
             cluster_distance: 75.0,
             comms_cost: 1.0,
             energy_gain: 1.5,

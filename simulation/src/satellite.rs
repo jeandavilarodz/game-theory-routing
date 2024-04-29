@@ -244,8 +244,12 @@ impl SatelliteEnergy {
             return;
         }
 
-        if cluster.size() < 2 && self.energy > self.cost {
-            self.in_game = true;
+        if cluster.size() < 2 {
+            if self.energy > self.cost {
+                self.in_game = true;
+            } else {
+                self.in_game = false;
+            }
             return;
         }
 
