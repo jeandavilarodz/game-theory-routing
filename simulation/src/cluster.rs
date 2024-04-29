@@ -1,4 +1,3 @@
-use crate::satellite::{SatellitePosition, MAX_DISTANCE};
 /// This module will encapsulate information for clusters in the
 /// network graph. A cluster is a group of nodes that are connected
 /// to each other and are not connected to any other nodes outside
@@ -11,6 +10,7 @@ use crate::satellite::{SatellitePosition, MAX_DISTANCE};
 /// 4. A cluster size, which is the number of nodes in the cluster.
 ///
 
+use crate::satellite::SatellitePosition;
 use crate::simulation::SIZE;
 
 use std::collections::HashMap;
@@ -127,7 +127,7 @@ pub fn render(cluster: &Cluster, satellites: &Vec<SatellitePosition>) -> Html {
     html! {
         <g>
             // Render edge between CH and BS
-            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="hsl(359.459, 100%, 78%)" stroke-width="1" opacity={opacity} />
+            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="gray" stroke-width="1" opacity={opacity} />
 
             // Render edges between members and CH
             { edgelist.iter().map(|(e1, e2)| render_edge(e1, e2)).collect::<Vec<_>>() }

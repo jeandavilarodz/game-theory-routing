@@ -5,14 +5,9 @@ use crate::cluster::{Cluster, ClusterMap};
 use crate::components::info_panel;
 use crate::math::Vector2D;
 use crate::quadtree::{box2d::Box2d, quadtree::QuadTree, types::*};
-use crate::satellite::{
-    SatelliteComms, SatelliteEnergy, SatellitePosition, SatelliteProperties, MAX_DISTANCE,
-};
+use crate::satellite::{SatelliteEnergy, SatellitePosition, SatelliteProperties};
 use crate::satellite;
 use crate::settings::Settings;
-
-use gloo::console::log;
-use wasm_bindgen::JsValue;
 
 pub const SIZE: Vector2D = Vector2D::new(1200.0, 1200.0);
 
@@ -38,7 +33,6 @@ pub struct Props {
 pub struct Simulation {
     entity_props: Vec<SatelliteProperties>,
     entity_positions: Vec<SatellitePosition>,
-    entity_comms: Vec<SatelliteComms>,
     entity_energy: Vec<SatelliteEnergy>,
     interval: Interval,
     comms_interval: Interval,
@@ -58,18 +52,15 @@ impl Component for Simulation {
 
         let mut entity_props = Vec::with_capacity(settings.boids);
         let mut entity_positions = Vec::with_capacity(settings.boids);
-        let mut entity_comms = Vec::with_capacity(settings.boids);
         let mut entity_energy = Vec::with_capacity(settings.boids);
 
         for id in 0..settings.boids {
             let properties = SatelliteProperties::new_random(id);
             let position = SatellitePosition::new_random(&properties);
             let game = SatelliteEnergy::new_random(id, &settings);
-            let communication = SatelliteComms::new(id);
 
             entity_props.push(properties);
             entity_positions.push(position);
-            entity_comms.push(communication);
             entity_energy.push(game);
         }
 
@@ -95,7 +86,6 @@ impl Component for Simulation {
         Self {
             entity_props,
             entity_positions,
-            entity_comms,
             entity_energy,
             interval,
             comms_interval,
@@ -255,6 +245,7 @@ impl Component for Simulation {
                         clusters.insert(cluster);
                     }
 
+                    // Assign members to the nearest cluster head
                     for prop in self.entity_props.iter_mut() {
                         if cluster_heads.contains(&prop.id()) {
                             // skip assignment for cluster heads
@@ -305,61 +296,6 @@ impl Component for Simulation {
                     }
 
                     self.cluster_map = clusters;
-
-                    /*
-                    let curr_comms_state = self.entity_comms.as_mut_slice();
-                    let num_iters = self.entity_props.len();
-
-                    for id in 0..num_iters {
-                        let visible_range = (self.entity_props[id].distance() / MAX_DISTANCE) * (SIZE.y / 2.0);
-                        let position = self.entity_positions[id].screen_position();
-
-                        let neighbor_ids = qtree
-                            .query_range(Box2d::new(
-                                Point::new(position.x - visible_range, position.y + visible_range),
-                                Point::new(position.x + visible_range, position.y - visible_range),
-                            ))
-                            .iter()
-                            .filter_map(|e| if id != *e.value { Some(*e.value) } else { None })
-                            .collect::<Vec<_>>();
-
-                        let neigh_pos = neighbor_ids
-                            .iter()
-                            .map(|i| &self.entity_positions[*i])
-                            .collect::<Vec<_>>();
-
-
-                        let (first, sec) = curr_comms_state.split_at_mut(id);
-
-                        // let debug = format!("{}:\nfirst: {:?}\nsec: {:?}", id, first, sec);
-                        // log!(JsValue::from(&debug));
-
-                        let (current, other) = sec.split_at_mut(1);
-
-                        // let debug = format!("{}:\nother: {:?}\ncurrent:{:?}", id, other, current);
-                        // log!(JsValue::from(&debug));
-
-                        let neigh_comms = other
-                            .iter_mut()
-                            .chain(first)
-                            .filter_map(|e| {
-                                if neighbor_ids.contains(&e.id()) {
-                                    Some(e)
-                                } else {
-                                    None
-                                }
-                            })
-                            .collect::<Vec<_>>();
-
-
-                        // let debug = format!("{}: {:?}", id, neigh_comms);
-                        // log!(JsValue::from(&debug));
-
-                        let ent_props = &self.entity_props[id];
-                        let ent_pos = &self.entity_positions[id];
-                        current[0].update(ent_props, ent_pos, neigh_pos, neigh_comms, settings);
-                    }
-                    */
                     self.qtree = Some(qtree);
 
                     true
@@ -384,7 +320,6 @@ impl Component for Simulation {
             // Clear entity info
             self.entity_props.clear();
             self.entity_positions.clear();
-            self.entity_comms.clear();
             self.entity_energy.clear();
 
             self.selected_satellite_id = None;
@@ -397,11 +332,9 @@ impl Component for Simulation {
                 let properties = SatelliteProperties::new_random(id);
                 let position = SatellitePosition::new_random(&properties);
                 let game = SatelliteEnergy::new_random(id, &settings);
-                let communication = SatelliteComms::new(id);
 
                 self.entity_props.push(properties);
                 self.entity_positions.push(position);
-                self.entity_comms.push(communication);
                 self.entity_energy.push(game);
             }
 
@@ -450,7 +383,7 @@ impl Component for Simulation {
                 }).collect::<Html>() }
 
                 if let Some(id) = self.selected_satellite_id {
-                    { info_panel::render(&self.entity_props[id], &self.entity_positions[id], &self.entity_comms[id], &self.entity_energy[id]) }
+                    { info_panel::render(&self.entity_props[id], &self.entity_positions[id], &self.entity_energy[id]) }
                 }
 
                 if let Some(qtree) = self.qtree.as_ref() {

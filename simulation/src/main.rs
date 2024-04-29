@@ -1,19 +1,9 @@
-use settings::Settings;
-use simulation::Simulation;
-use slider::Slider;
+use gtr::settings::Settings;
+use gtr::simulation::Simulation;
+use gtr::components::slider::Slider;
+
 use yew::html::Scope;
 use yew::{html, Component, Context, Html};
-
-mod boid;
-mod math;
-mod settings;
-mod simulation;
-mod slider;
-mod quadtree;
-mod satellite;
-mod packet;
-mod components;
-mod cluster;
 
 pub enum Msg {
     ChangeSettings(Settings),

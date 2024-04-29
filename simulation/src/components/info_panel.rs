@@ -7,7 +7,7 @@ use crate::simulation::SIZE;
 use crate::satellite::*;
 
 
-pub fn render(props: &SatelliteProperties, pos: &SatellitePosition, _comms: &SatelliteComms, game: &SatelliteEnergy) -> Html {
+pub fn render(props: &SatelliteProperties, pos: &SatellitePosition, game: &SatelliteEnergy) -> Html {
     // Calculate X position offset for rendering the panel from the satellite based on distance from screen borders
     let x_offset = if pos.screen_position().x > (SIZE.x - 180.0) { -180.0 } else { 20.0 };
     let y_offset = if pos.screen_position().y > (SIZE.y - 100.0) { -100.0 } else { 20.0 };

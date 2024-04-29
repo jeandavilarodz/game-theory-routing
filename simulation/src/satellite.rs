@@ -2,7 +2,6 @@
 
 use crate::cluster::Cluster;
 use crate::math::{self, Vector2D};
-use crate::packet::{Packet, PacketSource};
 use crate::settings::Settings;
 use crate::simulation::SIZE;
 use rand::prelude::*;
@@ -30,12 +29,6 @@ pub struct SatelliteProperties {
 pub struct SatellitePosition {
     position: Vector2D,
     angle: f32,
-}
-
-#[derive(Clone, Debug)]
-pub struct SatelliteComms {
-    packets: Vec<Packet>,
-    source: PacketSource,
 }
 
 pub struct SatelliteEnergy {
@@ -139,88 +132,6 @@ impl SatellitePosition {
         let y = self.position.y - SIZE.y / 2.0;
 
         (x * x + y * y).sqrt()
-    }
-}
-
-impl SatelliteComms {
-    pub fn new(id: usize) -> Self {
-        Self {
-            packets: Vec::new(),
-            source: PacketSource::new(id),
-        }
-    }
-
-    pub fn id(&self) -> usize {
-        self.source.id()
-    }
-
-    pub fn packets(&self) -> &Vec<Packet> {
-        &self.packets
-    }
-
-    pub fn add_packet(&mut self, packet: Packet) {
-        if packet.in_path(self.source.id()) {
-            return;
-        }
-
-        if packet.ttl() == 0 {
-            return;
-        }
-
-        let mut packet = packet;
-        packet.decrement_ttl();
-        let timestamp = chrono::Local::now().timestamp() as u64;
-        packet.add_hop(self.source.id(), timestamp);
-
-        let debug = format!("Added on {}: {:?}", self.id(), packet);
-        log!(JsValue::from(&debug));
-
-        self.packets.push(packet);
-    }
-
-    pub fn update(&mut self,
-                       sat: &SatelliteProperties,
-                       pos: &SatellitePosition,
-                       neigh_pos: Vec<&SatellitePosition>,
-                       neigh_comms: Vec<&mut SatelliteComms>,
-                       _settings: &Settings)
-    {
-        let mut rng = rand::thread_rng();
-
-        // Create a new packet
-        let mut packet = if rng.gen_bool(0.1) {
-            Some(self.source.next())
-        } else {
-            None
-        };
-
-        // Make the assumption that satellites can communicate with a max distance from Earth to the vehicle
-        let comms_distance = (sat.distance / MAX_DISTANCE) * (SIZE.y / 2.0);
-        let mut neigh_comms = neigh_comms;
-
-        // Iterate through all neighbors and send packets if they are within comms distance
-        for (neighbor_comms, neighbor_pos) in neigh_comms.iter_mut().zip(neigh_pos.iter()) {
-
-            // Do not send packet to ourselves
-            if self.source.id() == neighbor_comms.id() {
-                continue;
-            }
-
-            let distance = (pos.position - neighbor_pos.position).magnitude();
-
-            if distance < comms_distance {
-                if let Some(ref mut packet) = packet {
-                    neighbor_comms.add_packet(packet.clone());
-                }
-
-                for packet in self.packets.iter().cloned() {
-                    neighbor_comms.add_packet(packet);
-                }
-            }
-        }
-
-        // Sent all packets to neighbors
-        self.packets.clear();
     }
 }
 
