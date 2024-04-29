@@ -64,7 +64,7 @@ impl Component for Simulation {
         for id in 0..settings.boids {
             let properties = SatelliteProperties::new_random(id);
             let position = SatellitePosition::new_random(&properties);
-            let game = SatelliteEnergy::new_random(&settings);
+            let game = SatelliteEnergy::new_random(id, &settings);
             let communication = SatelliteComms::new(id);
 
             entity_props.push(properties);
@@ -87,7 +87,7 @@ impl Component for Simulation {
 
         let game_interval = {
             let link = ctx.link().clone();
-            Interval::new(500 as u32, move || link.send_message(Msg::GameTick))
+            Interval::new(333 as u32, move || link.send_message(Msg::GameTick))
         };
 
         let generation = ctx.props().generation;
@@ -142,12 +142,27 @@ impl Component for Simulation {
                     false
                 } else {
                     for cluster in self.cluster_map.clusters() {
-                        for member in cluster.members() {
-                            let energy = &mut self.entity_energy[*member];
-                            energy.update(cluster);
+                        if cluster.size() < 2 {
+                            continue;
+                        }
+
+                        for &id in cluster.members() {
+                            self.entity_energy.get_mut(id).expect("Couldn't get sat in cluster").update_game(cluster);
+                        }
+                        
+                        // All sats in cluster should've made a decision to enter or leave
+                        
+                        for id in 0..cluster.size() {
+                            let (first, sec) = cluster.members().split_at(id);
+                            let (current, other) = sec.split_at(1);
+                            let sat_ptr  = self.entity_energy.as_mut_ptr();
+                            unsafe {
+                                let neighbors = other.iter().chain(first).filter_map(|&eid| sat_ptr.add(eid).as_ref()).collect::<Vec<_>>();
+                                self.entity_energy.get_mut(current[0]).unwrap().update(neighbors);
+                            }
                         }
                     }
-                
+ 
                     true
                 }
             }
@@ -249,7 +264,7 @@ impl Component for Simulation {
                         let id = prop.id(); 
                         let pos = self.entity_positions.get(id).unwrap();
                         let position = pos.screen_position();
-                        let mut nearest_distance = pos.distance_from_earth();
+                        let mut nearest_distance = f32::INFINITY;
                         let mut nearest_head = None;
 
                         for head in &cluster_heads {
@@ -381,7 +396,7 @@ impl Component for Simulation {
             for id in 0..settings.boids {
                 let properties = SatelliteProperties::new_random(id);
                 let position = SatellitePosition::new_random(&properties);
-                let game = SatelliteEnergy::new_random(&settings);
+                let game = SatelliteEnergy::new_random(id, &settings);
                 let communication = SatelliteComms::new(id);
 
                 self.entity_props.push(properties);
@@ -410,7 +425,7 @@ impl Component for Simulation {
 
             self.game_interval = {
                 let link = ctx.link().clone();
-                Interval::new(500 as u32, move || link.send_message(Msg::GameTick))
+                Interval::new(333 as u32, move || link.send_message(Msg::GameTick))
             };
 
             true

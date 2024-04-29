@@ -33,6 +33,8 @@ pub struct Settings {
     pub comms_cost: f32,
     /// Energy gain from environment
     pub energy_gain: f32,
+    /// Maximum energy per node
+    pub max_energy: f32,
 }
 impl Settings {
     const KEY: &'static str = "yew.boids.settings";
@@ -63,10 +65,11 @@ impl Default for Settings {
             turn_speed_ratio: 0.33,
             border_margin: 0.1,
             color_adapt_factor: 0.05,
-            energy_threshold: 50.0,
-            cluster_distance: 100.0,
-            comms_cost: 2.0,
-            energy_gain: 3.0,
+            energy_threshold: 20.0,
+            cluster_distance: 75.0,
+            comms_cost: 1.0,
+            energy_gain: 1.5,
+            max_energy: 100.0,
         }
     }
 }

@@ -39,10 +39,12 @@ pub struct SatelliteComms {
 }
 
 pub struct SatelliteEnergy {
+    id: usize,
     in_game: bool,
     cost: f32,
     gain: f32,
     energy: f32,
+    max_energy: f32,
 }
 
 impl SatelliteProperties {
@@ -222,20 +224,27 @@ impl SatelliteComms {
 }
 
 impl SatelliteEnergy {
-    pub fn new_random(settings: &Settings) -> Self {
+    pub fn new_random(id: usize, settings: &Settings) -> Self {
         let mut rng = rand::thread_rng();
         let energy = rng.gen::<f32>() * 100.0;
 
         Self {
-            in_game: true,
+            id,
+            in_game: false,
             cost: settings.comms_cost,
             gain: settings.energy_gain,
             energy,
+            max_energy: settings.max_energy,
         }
     }
 
-    pub fn update(&mut self, cluster: &Cluster) {
-        if cluster.size() < 2 {
+    pub fn update_game(&mut self, cluster: &Cluster) {
+        if self.energy < self.cost || self.energy < 0.0 {
+            self.in_game = false;
+            return;
+        }
+
+        if cluster.size() < 2 && self.energy > self.cost {
             self.in_game = true;
             return;
         }
@@ -245,15 +254,56 @@ impl SatelliteEnergy {
         let num_neighbors = (cluster.size() - 1) as f32;
         let prob_entering = 1.0 - (1.0 - ((self.energy - self.cost) / (self.energy + self.gain))).powf(1.0/num_neighbors);
 
-        if prob_entering < 0.0 {
+        if prob_entering < 0.0 || prob_entering > 1.0 || prob_entering.is_nan() {
             self.in_game = false;
             return;
         }
-        
-        let debug = format!("Prob entering {}:", prob_entering);
+ 
+        let debug = format!("id: {} Pe: {}:", self.id, prob_entering);
         log!(JsValue::from(&debug));
-        
-        self.in_game = rng.gen_bool(prob_entering.into());
+
+        self.in_game = rng.gen_bool(prob_entering as f64);
+        if self.in_game {
+            let debug = format!("id: {} -> entering game: {}", self.id, self.energy);
+            log!(JsValue::from(&debug));
+        } else {
+            let debug = format!("id: {} -> not entering game: {}", self.id, self.energy);
+            log!(JsValue::from(&debug));
+        }
+    }
+
+    pub fn update(&mut self, neighbors: Vec<&SatelliteEnergy>) {
+        if self.in_game {
+            self.energy -= self.cost;
+
+            // Clamp energy to 0
+            if self.energy < 0.0 {
+                self.energy = 0.0;
+            }
+            let debug = format!("id: {} -> consumed {}", self.id, self.energy);
+            log!(JsValue::from(&debug));
+            return;
+        }
+
+        // Calculate utility based on decisions made by neighbors
+        let neighbors_in_game = neighbors.iter().fold(0, |acc, n| acc + (n.in_game as u32));
+
+        // If no neighbors are in the game, get no payoff
+        if neighbors_in_game == 0 {
+            return;
+        }
+        else {
+            // Recharge energy
+            self.energy += self.gain;
+            
+            // Clamp energy to max energy
+            if self.energy > self.max_energy {
+                self.energy = self.max_energy;
+            }
+
+            let debug = format!("id: {} -> recharge {}", self.id, self.energy);
+            log!(JsValue::from(&debug));
+        }
     }
 
     pub fn energy(&self) -> f32 {
