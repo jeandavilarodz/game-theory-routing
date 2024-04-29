@@ -107,10 +107,28 @@ pub fn render(cluster: &Cluster, satellites: &Vec<SatellitePosition>) -> Html {
     let x2 = format!("{:.3}", SIZE.x / 2.0);
     let y2 = format!("{:.3}", SIZE.y / 2.0);
 
+    // Create edgelist between all members of the cluster
+    let mut edgelist = Vec::new();
+    for i in 0..cluster.size() {
+        for j in 0..cluster.size() {
+            if i == j {
+                continue;
+            }
+
+            let m1 = satellites.get(cluster.members()[i]).unwrap();
+            let m2 = satellites.get(cluster.members()[j]).unwrap();
+
+            edgelist.push((m1, m2));
+        }
+    }
+
     html! {
         <g>
-            { cluster.members().iter().filter_map(|id| satellites.get(*id)).map(|m| render_edge(&head, m)).collect::<Vec<_>>() }
-            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="green" stroke-width="1" opacity="0.5" />
+            // Render edge between CH and BS
+            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="hsl(359.459, 100%, 78%)" stroke-width="1" opacity="0.5" />
+
+            // Render edges between members and CH
+            { edgelist.iter().map(|(e1, e2)| render_edge(e1, e2)).collect::<Vec<_>>() }
         </g>
     }
 }

@@ -443,6 +443,8 @@ impl Component for Simulation {
         html! {
             <svg class="simulation-window" viewBox={view_box} preserveAspectRatio="xMidYMid">
 
+                { self.cluster_map.clusters().iter().map(|e| crate::cluster::render(e, &self.entity_positions)).collect::<Vec<_>>() }
+
                 { (0..num_sats).map(|id| {
                     satellite::render(&self.entity_props[id], &self.entity_positions[id], &self.entity_energy[id], onclick_cb.clone())
                 }).collect::<Html>() }
@@ -456,8 +458,6 @@ impl Component for Simulation {
                         { qtree.render() }
                     }
                 }
-
-                { self.cluster_map.clusters().iter().map(|e| crate::cluster::render(e, &self.entity_positions)).collect::<Vec<_>>() }
 
             </svg>
         }

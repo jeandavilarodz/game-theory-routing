@@ -45,6 +45,7 @@ pub struct SatelliteEnergy {
     gain: f32,
     energy: f32,
     max_energy: f32,
+    prob_entering: f32,
 }
 
 impl SatelliteProperties {
@@ -235,7 +236,12 @@ impl SatelliteEnergy {
             gain: settings.energy_gain,
             energy,
             max_energy: settings.max_energy,
+            prob_entering: 100.0,
         }
+    }
+
+    pub fn prob_entering(&self) -> f32 {
+        self.prob_entering
     }
 
     pub fn update_game(&mut self, cluster: &Cluster) {
@@ -262,11 +268,14 @@ impl SatelliteEnergy {
             self.in_game = false;
             return;
         }
- 
-        let debug = format!("id: {} Pe: {}:", self.id, prob_entering);
-        log!(JsValue::from(&debug));
 
+        // Store probability of entering game
+        self.prob_entering = prob_entering;
+
+        // Determine if satellite enters game
         self.in_game = rng.gen_bool(prob_entering as f64);
+
+        #[cfg(debug_assertions)]
         if self.in_game {
             let debug = format!("id: {} -> entering game: {}", self.id, self.energy);
             log!(JsValue::from(&debug));
