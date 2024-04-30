@@ -6,7 +6,7 @@ pub struct QuadTree<V>
 {
     capacity: usize,
     boundary: Box2d,
-    entries: Vec<Entry<f64, V>>,
+    entries: Vec<Entry<f32, V>>,
 
     north_west: Option<Box<QuadTree<V>>>,
     north_east: Option<Box<QuadTree<V>>>,
@@ -30,7 +30,7 @@ where
         }
     }
 
-    pub fn insert(&mut self, point: Point<f64>, value: V) -> bool {
+    pub fn insert(&mut self, point: Point<f32>, value: V) -> bool {
         // if point is not in boundary, return false
         if !self.boundary.contains(&point) {
             return false;
@@ -74,7 +74,7 @@ where
         self.south_west = Some(Box::new(QuadTree::new(sub_boxes[3].clone(), self.capacity)));
     }
 
-    pub fn query_range(&self, range: Box2d) -> Vec<Entry<f64, &V>> {
+    pub fn query_range(&self, range: Box2d) -> Vec<Entry<f32, &V>> {
         let mut entries = Vec::new();
 
         if !self.boundary.intersects_box(&range) {

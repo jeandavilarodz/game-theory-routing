@@ -8,7 +8,7 @@ body {
   margin: 0;
   padding: 0;
 
-  background: #1b1b1b;
+  background: #010b19;
   color: whitesmoke;
   font-family: "Roboto", sans-serif;
   height: 100%;
@@ -30,8 +30,12 @@ body {
 }
 
 .simulation-window {
-  height: 100%;
+  background-image: url("assets/planet.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 40px 40px;
   width: 100%;
+  height: 100%;
 }
 
 .panel {

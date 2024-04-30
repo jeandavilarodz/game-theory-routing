@@ -8,23 +8,33 @@ pub struct Settings {
     // time between each simulation tick
     pub tick_interval_ms: u64,
     /// view distance of a boid
-    pub visible_range: f64,
+    pub visible_range: f32,
     /// distance boids try to keep between each other
-    pub min_distance: f64,
+    pub min_distance: f32,
     /// max speed
-    pub max_speed: f64,
+    pub max_speed: f32,
     /// force multiplier for pulling boids together
-    pub cohesion_factor: f64,
+    pub cohesion_factor: f32,
     /// force multiplier for separating boids
-    pub separation_factor: f64,
+    pub separation_factor: f32,
     /// force multiplier for matching velocity of other boids
-    pub alignment_factor: f64,
+    pub alignment_factor: f32,
     /// controls turn speed to avoid leaving boundary
-    pub turn_speed_ratio: f64,
+    pub turn_speed_ratio: f32,
     /// percentage of the size to the boundary at which a boid starts turning away
-    pub border_margin: f64,
+    pub border_margin: f32,
     /// factor for adapting the average color of the swarm
-    pub color_adapt_factor: f64,
+    pub color_adapt_factor: f32,
+    /// Energy threshold to become a cluster head
+    pub energy_threshold: f32,
+    /// Distance threshold between cluster heads
+    pub cluster_distance: f32,
+    /// Energy cost of communication
+    pub comms_cost: f32,
+    /// Energy gain from environment
+    pub energy_gain: f32,
+    /// Maximum energy per node
+    pub max_energy: f32,
 }
 impl Settings {
     const KEY: &'static str = "yew.boids.settings";
@@ -44,7 +54,7 @@ impl Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            boids: 512,
+            boids: 64,
             tick_interval_ms: 50,
             visible_range: 40.0,
             min_distance: 15.0,
@@ -55,6 +65,11 @@ impl Default for Settings {
             turn_speed_ratio: 0.33,
             border_margin: 0.1,
             color_adapt_factor: 0.05,
+            energy_threshold: 33.0,
+            cluster_distance: 75.0,
+            comms_cost: 1.0,
+            energy_gain: 1.5,
+            max_energy: 100.0,
         }
     }
 }

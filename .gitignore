@@ -15,3 +15,7 @@ Cargo.lock
 
 dist/
 .idea/
+.vscode/
+build/
+
+.DS_Store
