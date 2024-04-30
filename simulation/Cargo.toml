@@ -1,7 +1,6 @@
 [package]
 name = "gtr"
 version = "0.1.0"
-authors = ["motoki saito <stmtk13044032@gmail.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
 
