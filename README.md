@@ -1,7 +1,6 @@
 ## Description ###
-This project tries to implement a simulation for opportunistic routing in space scenarios
-based on game theory concepts.
-
+This project implements a simulation for opportunistic routing in space scenarios
+based on game theory concepts using basic assumptions of NASA's DTN protocol
 
 ## Install ##
 
